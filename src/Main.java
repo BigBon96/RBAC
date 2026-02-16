@@ -34,4 +34,13 @@ void main() {
     IO.println("matches READ/users: " + p1.matches("READ", "users"));
     IO.println("matches DEL/reports: " + p2.matches("DEL", "reports"));
     IO.println("matches WRITE/users: " + p1.matches("WRITE", "users"));
+
+    // Тесты для Role
+    Role admin = new Role("Administrator", "Full system access");
+    admin.addPermission(p1);
+    admin.addPermission(p2);
+
+    IO.println(admin.format());
+    IO.println("admin has READ/users: " + admin.hasPermission("READ", "users"));
+    IO.println("admin has WRITE/users: " + admin.hasPermission("WRITE", "users"));
 }
