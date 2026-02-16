@@ -43,4 +43,8 @@ void main() {
     IO.println(admin.format());
     IO.println("admin has READ/users: " + admin.hasPermission("READ", "users"));
     IO.println("admin has WRITE/users: " + admin.hasPermission("WRITE", "users"));
+
+    // Тесты для AssignmentMetadata
+    AssignmentMetadata meta = AssignmentMetadata.now(validUser.username(), "Initial setup");
+    IO.println(meta.format());
 }
