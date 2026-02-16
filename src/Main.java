@@ -1,13 +1,26 @@
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 void main() {
-    //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-    // to see how OpenIDE suggests fixing it.
-    IO.println(String.format("Hello and welcome!"));
+    // Валидный пользователь
+    User validUser = User.validate("username_1", "Valid User", "user@example.com");
+    IO.println(validUser.format());
 
-    for (int i = 1; i <= 5; i++) {
-        //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-        // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-        IO.println("i = " + i);
+    // Слишком короткий username
+    try {
+        User.validate("ab", "Short Username", "short@example.com");
+    } catch (IllegalArgumentException e) {
+        IO.println(e.getMessage());
+    }
+
+    // Недопустимые символы в username
+    try {
+        User.validate("user-name", "Invalid Chars", "user2@example.com");
+    } catch (IllegalArgumentException e) {
+        IO.println(e.getMessage());
+    }
+
+    // Некорректный email
+    try {
+        User.validate("user_ok", "Bad Email", "bad-email");
+    } catch (IllegalArgumentException e) {
+        IO.println(e.getMessage());
     }
 }
