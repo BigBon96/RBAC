@@ -23,4 +23,15 @@ void main() {
     } catch (IllegalArgumentException e) {
         IO.println(e.getMessage());
     }
+
+    // Тесты для Permission
+    Permission p1 = new Permission("read", "Users", "Can read users");
+    IO.println(p1.format());
+
+    Permission p2 = new Permission("delete reports", "Reports", "Can delete reports");
+    IO.println(p2.format());
+
+    IO.println("matches READ/users: " + p1.matches("READ", "users"));
+    IO.println("matches DEL/reports: " + p2.matches("DEL", "reports"));
+    IO.println("matches WRITE/users: " + p1.matches("WRITE", "users"));
 }
