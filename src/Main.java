@@ -44,7 +44,16 @@ void main() {
     IO.println("admin has READ/users: " + admin.hasPermission("READ", "users"));
     IO.println("admin has WRITE/users: " + admin.hasPermission("WRITE", "users"));
 
-    // Тесты для AssignmentMetadata
+    // Тесты для AssignmentMetadata и назначений
     AssignmentMetadata meta = AssignmentMetadata.now(validUser.username(), "Initial setup");
     IO.println(meta.format());
+
+    TemporaryAssignment ta = new TemporaryAssignment(validUser, admin, meta);
+    ta.extend(LocalDateTime.now().plusDays(10).toString());
+    IO.println(ta.summary());
+
+    PermanentAssignment pa = new PermanentAssignment(validUser, admin, meta);
+    IO.println(pa.summary());
+    pa.revoke();
+    IO.println(pa.summary());
 }
