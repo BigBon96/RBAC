@@ -180,9 +180,9 @@ class AssignmentManagerTest {
         var assignment = new TemporaryAssignment(user1, role1, metadata);
         assignment.extend(LocalDate.parse("2025-01-01").atStartOfDay().toString());
         manager.add(assignment);
-        manager.extendTemporaryAssignment(assignment.assignmentId(), 
-            LocalDate.parse("2026-01-01").atStartOfDay().toString());
-        assertEquals("2026-01-01T00:00:00", assignment.getExpiresAt());
+        String newDate = LocalDate.parse("2026-01-01").atStartOfDay().toString();
+        manager.extendTemporaryAssignment(assignment.assignmentId(), newDate);
+        assertEquals(newDate, assignment.getExpiresAt());
     }
 
     @Test
