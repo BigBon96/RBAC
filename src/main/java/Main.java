@@ -40,20 +40,24 @@ public class Main {
         List<User> users = List.of(user, user2, user3);
         
         System.out.println("\nФильтр byUsername('username'):");
-        users.stream().filter(UserFilters.byUsername("username")).forEach(u -> System.out.println("  " + u.format()));
+        UserFilter filter1 = UserFilters.byUsername("username");
+        users.stream().filter(u -> filter1.test(u)).forEach(u -> System.out.println("  " + u.format()));
         
         System.out.println("\nФильтр byUsernameContains('admin'):");
-        users.stream().filter(UserFilters.byUsernameContains("admin")).forEach(u -> System.out.println("  " + u.format()));
+        UserFilter filter2 = UserFilters.byUsernameContains("admin");
+        users.stream().filter(u -> filter2.test(u)).forEach(u -> System.out.println("  " + u.format()));
         
         System.out.println("\nФильтр byEmailDomain('@company.com'):");
-        users.stream().filter(UserFilters.byEmailDomain("@company.com")).forEach(u -> System.out.println("  " + u.format()));
+        UserFilter filter3 = UserFilters.byEmailDomain("@company.com");
+        users.stream().filter(u -> filter3.test(u)).forEach(u -> System.out.println("  " + u.format()));
         
         System.out.println("\nФильтр byFullNameContains('Admin'):");
-        users.stream().filter(UserFilters.byFullNameContains("Admin")).forEach(u -> System.out.println("  " + u.format()));
+        UserFilter filter4 = UserFilters.byFullNameContains("Admin");
+        users.stream().filter(u -> filter4.test(u)).forEach(u -> System.out.println("  " + u.format()));
         
         System.out.println("\nКомбинированный фильтр (byUsernameContains OR byEmailDomain):");
         UserFilter combined = UserFilters.byUsernameContains("admin").or(UserFilters.byEmailDomain("@company.com"));
-        users.stream().filter(combined).forEach(u -> System.out.println("  " + u.format()));
+        users.stream().filter(u -> combined.test(u)).forEach(u -> System.out.println("  " + u.format()));
 
         // Подзадача 2.2: RoleFilter
         System.out.println("\n=== Подзадача 2.2: RoleFilter ===");
@@ -62,19 +66,24 @@ public class Main {
         List<Role> roles = List.of(role, role2);
         
         System.out.println("\nФильтр byName('admin'):");
-        roles.stream().filter(RoleFilters.byName("admin")).forEach(r -> System.out.println("  " + r.getName()));
+        RoleFilter roleFilter1 = RoleFilters.byName("admin");
+        roles.stream().filter(r -> roleFilter1.test(r)).forEach(r -> System.out.println("  " + r.getName()));
         
         System.out.println("\nФильтр byNameContains('user'):");
-        roles.stream().filter(RoleFilters.byNameContains("user")).forEach(r -> System.out.println("  " + r.getName()));
+        RoleFilter roleFilter2 = RoleFilters.byNameContains("user");
+        roles.stream().filter(r -> roleFilter2.test(r)).forEach(r -> System.out.println("  " + r.getName()));
         
         System.out.println("\nФильтр hasPermission(p1):");
-        roles.stream().filter(RoleFilters.hasPermission(p1)).forEach(r -> System.out.println("  " + r.getName()));
+        RoleFilter roleFilter3 = RoleFilters.hasPermission(p1);
+        roles.stream().filter(r -> roleFilter3.test(r)).forEach(r -> System.out.println("  " + r.getName()));
         
         System.out.println("\nФильтр hasPermission('read', 'users'):");
-        roles.stream().filter(RoleFilters.hasPermission("read", "users")).forEach(r -> System.out.println("  " + r.getName()));
+        RoleFilter roleFilter4 = RoleFilters.hasPermission("read", "users");
+        roles.stream().filter(r -> roleFilter4.test(r)).forEach(r -> System.out.println("  " + r.getName()));
         
         System.out.println("\nФильтр hasAtLeastNPermissions(2):");
-        roles.stream().filter(RoleFilters.hasAtLeastNPermissions(2)).forEach(r -> System.out.println("  " + r.getName() + " (" + r.getPermissions().size() + " permissions)"));
+        RoleFilter roleFilter5 = RoleFilters.hasAtLeastNPermissions(2);
+        roles.stream().filter(r -> roleFilter5.test(r)).forEach(r -> System.out.println("  " + r.getName() + " (" + r.getPermissions().size() + " permissions)"));
 
         // Подзадача 2.3: AssignmentFilter
         System.out.println("\n=== Подзадача 2.3: AssignmentFilter ===");
@@ -84,22 +93,28 @@ public class Main {
         List<RoleAssignment> assignments = List.of(ta, ta2, pa, pa2);
         
         System.out.println("\nФильтр byUser(user):");
-        assignments.stream().filter(AssignmentFilters.byUser(user)).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName()));
+        AssignmentFilter assignFilter1 = AssignmentFilters.byUser(user);
+        assignments.stream().filter(a -> assignFilter1.test(a)).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName()));
         
         System.out.println("\nФильтр byUsername('operator'):");
-        assignments.stream().filter(AssignmentFilters.byUsername("operator")).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName()));
+        AssignmentFilter assignFilter2 = AssignmentFilters.byUsername("operator");
+        assignments.stream().filter(a -> assignFilter2.test(a)).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName()));
         
         System.out.println("\nФильтр byRole(role):");
-        assignments.stream().filter(AssignmentFilters.byRole(role)).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName()));
+        AssignmentFilter assignFilter3 = AssignmentFilters.byRole(role);
+        assignments.stream().filter(a -> assignFilter3.test(a)).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName()));
         
         System.out.println("\nФильтр activeOnly():");
-        assignments.stream().filter(AssignmentFilters.activeOnly()).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName() + " (active: " + a.isActive() + ")"));
+        AssignmentFilter assignFilter4 = AssignmentFilters.activeOnly();
+        assignments.stream().filter(a -> assignFilter4.test(a)).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName() + " (active: " + a.isActive() + ")"));
         
         System.out.println("\nФильтр inactiveOnly():");
-        assignments.stream().filter(AssignmentFilters.inactiveOnly()).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName() + " (active: " + a.isActive() + ")"));
+        AssignmentFilter assignFilter5 = AssignmentFilters.inactiveOnly();
+        assignments.stream().filter(a -> assignFilter5.test(a)).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName() + " (active: " + a.isActive() + ")"));
         
         System.out.println("\nФильтр byType('PERMANENT'):");
-        assignments.stream().filter(AssignmentFilters.byType("PERMANENT")).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName() + " (" + a.assignmentType() + ")"));
+        AssignmentFilter assignFilter6 = AssignmentFilters.byType("PERMANENT");
+        assignments.stream().filter(a -> assignFilter6.test(a)).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName() + " (" + a.assignmentType() + ")"));
 
         // Подзадача 2.4: Sorters
         System.out.println("\n=== Подзадача 2.4: Sorters ===");
