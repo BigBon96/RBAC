@@ -7,4 +7,3 @@ public interface RoleAssignment {
     String assignmentType();
 }
 
-

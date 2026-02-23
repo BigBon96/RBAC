@@ -2,7 +2,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 
-public class TemporaryAssignment extends AbstractRoleAssignment {
+public class TemporaryAssignment extends AbstractRoleAssignment{
     private String expiresAt = "";
     private boolean autoRenew = false;
 
@@ -12,15 +12,25 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
 
     public void extend(String newExpirationDate) {
         if (newExpirationDate == null || newExpirationDate.isEmpty())
-            throw new IllegalArgumentException("Укажите корректную новую дату");
+            throw new IllegalArgumentException("Укажите корректную новую дату!");
 
         this.expiresAt = newExpirationDate;
     }
 
-    public boolean isExpired() {
-        LocalDateTime expiresAt = LocalDateTime.parse(this.expiresAt);
+    public String getExpiresAt() {
+        return expiresAt;
+    }
 
-        return expiresAt.isBefore(LocalDateTime.now());
+    public boolean isExpired() {
+        if (expiresAt == null || expiresAt.isEmpty()) {
+            return false;
+        }
+        try {
+            LocalDateTime expiresAt = LocalDateTime.parse(this.expiresAt);
+            return expiresAt.isBefore(LocalDateTime.now());
+        } catch (DateTimeParseException e) {
+            return false;
+        }
     }
 
     public String getTimeRemaining() {
@@ -83,5 +93,4 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
         return summary + String.format("\nExpires at: %s", this.expiresAt);
     }
 }
-
 

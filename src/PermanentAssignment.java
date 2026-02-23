@@ -23,8 +23,7 @@ public class PermanentAssignment extends AbstractRoleAssignment {
     }
 
     public boolean isRevoked() {
-        return revoked;
+        return this.revoked;
     }
 }
-
 

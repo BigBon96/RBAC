@@ -3,9 +3,8 @@ import java.util.Locale;
 public record Permission(String name, String resource, String description) {
 
     public Permission(String name, String resource, String description) {
-        if (description == null || description.isEmpty()) {
-            throw new IllegalArgumentException("Описание не должно быть пустым");
-        }
+        if (description == null || description.isEmpty())
+            throw new IllegalArgumentException("Описание не должно быть пустым!");
 
         this.name = name.toUpperCase(Locale.ROOT).replace(" ", "");
         this.resource = resource.toLowerCase(Locale.ROOT);
@@ -24,9 +23,8 @@ public record Permission(String name, String resource, String description) {
         String normalizedNamePattern = namePattern.toUpperCase(Locale.ROOT).replace(" ", "");
         String normalizedResourcePattern = resourcePattern.toLowerCase(Locale.ROOT);
 
-        return this.name.contains(normalizedNamePattern)
-                && this.resource.contains(normalizedResourcePattern);
+        return this.name.contains(normalizedNamePattern) &&
+                this.resource.contains(normalizedResourcePattern);
     }
 }
-
 

@@ -42,10 +42,9 @@ public class Role {
         return this.permissions.contains(permission);
     }
 
-    public boolean hasPermission(String permissionName, String resource) {
-        if (permissionName == null || resource == null) {
+    public boolean hasPermission (String permissionName, String resource) {
+        if (permissionName == null || resource == null)
             return false;
-        }
 
         return this.permissions.stream().anyMatch(p -> p.matches(permissionName, resource));
     }
@@ -107,5 +106,4 @@ public class Role {
         return sb.toString();
     }
 }
-
 
