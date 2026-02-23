@@ -1,213 +1,203 @@
-public class AssignmentManagerTest {
-    public static void main(String[] args) {
-        AssignmentManagerTest test = new AssignmentManagerTest();
-        test.testAdd();
-        test.testRemove();
-        test.testFindById();
-        test.testFindByUser();
-        test.testFindByRole();
-        test.testFindByFilter();
-        test.testGetActiveAssignments();
-        test.testUserHasRole();
-        test.testUserHasPermission();
-        test.testGetUserPermissions();
-        test.testRevokeAssignment();
-        test.testExtendTemporaryAssignment();
-        System.out.println("All AssignmentManager tests passed!");
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.time.LocalDate;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class AssignmentManagerTest {
+
+    UserManager userManager;
+    RoleManager roleManager;
+    AssignmentManager manager;
+    User user1;
+    User user2;
+    Role role1;
+    Role role2;
+    Permission perm1;
+    AssignmentMetadata metadata;
+
+    @BeforeEach
+    void setUp() {
+        userManager = new UserManager();
+        roleManager = new RoleManager();
+        manager = new AssignmentManager(userManager, roleManager);
+        
+        user1 = User.create("john_doe", "John Doe", "john@mail.com");
+        user2 = User.create("jane_admin", "Jane Admin", "jane@mail.com");
+        userManager.add(user1);
+        userManager.add(user2);
+        
+        role1 = new Role("admin", "Administrator");
+        role2 = new Role("user", "Regular user");
+        perm1 = new Permission("read", "users", "Read users");
+        role1.addPermission(perm1);
+        roleManager.add(role1);
+        roleManager.add(role2);
+        
+        metadata = AssignmentMetadata.now("system", "Test assignment");
     }
 
-    private void testAdd() {
-        UserManager userManager = new UserManager();
-        RoleManager roleManager = new RoleManager();
-        AssignmentManager manager = new AssignmentManager(userManager, roleManager);
-        
-        User user = User.create("testuser", "Test User", "test@example.com");
-        Role role = new Role("Admin", "Administrator");
-        userManager.add(user);
-        roleManager.add(role);
-        
-        RoleAssignment assignment = new PermanentAssignment(user, role, AssignmentMetadata.now("admin", "Test"));
+    @Test
+    void addAndFindById() {
+        var assignment = new PermanentAssignment(user1, role1, metadata);
         manager.add(assignment);
-        assert manager.count() == 1 : "Assignment should be added";
+        assertEquals(assignment, manager.findById(assignment.assignmentId()).orElse(null));
+        assertEquals(1, manager.count());
     }
 
-    private void testRemove() {
-        UserManager userManager = new UserManager();
-        RoleManager roleManager = new RoleManager();
-        AssignmentManager manager = new AssignmentManager(userManager, roleManager);
-        
-        User user = User.create("testuser", "Test User", "test@example.com");
-        Role role = new Role("Admin", "Administrator");
-        userManager.add(user);
-        roleManager.add(role);
-        
-        RoleAssignment assignment = new PermanentAssignment(user, role, AssignmentMetadata.now("admin", "Test"));
-        manager.add(assignment);
-        boolean removed = manager.remove(assignment);
-        assert removed : "Assignment should be removed";
-        assert manager.count() == 0 : "Count should be 0";
+    @Test
+    void addWithNonExistentUserThrows() {
+        var nonExistentUser = User.create("nonexistent", "Non Existent", "none@mail.com");
+        var assignment = new PermanentAssignment(nonExistentUser, role1, metadata);
+        assertThrows(IllegalArgumentException.class, () -> manager.add(assignment));
     }
 
-    private void testFindById() {
-        UserManager userManager = new UserManager();
-        RoleManager roleManager = new RoleManager();
-        AssignmentManager manager = new AssignmentManager(userManager, roleManager);
-        
-        User user = User.create("testuser", "Test User", "test@example.com");
-        Role role = new Role("Admin", "Administrator");
-        userManager.add(user);
-        roleManager.add(role);
-        
-        RoleAssignment assignment = new PermanentAssignment(user, role, AssignmentMetadata.now("admin", "Test"));
-        manager.add(assignment);
-        var found = manager.findById(assignment.assignmentId());
-        assert found.isPresent() : "Assignment should be found";
+    @Test
+    void addWithNonExistentRoleThrows() {
+        var nonExistentRole = new Role("nonexistent", "Non existent role");
+        var assignment = new PermanentAssignment(user1, nonExistentRole, metadata);
+        assertThrows(IllegalArgumentException.class, () -> manager.add(assignment));
     }
 
-    private void testFindByUser() {
-        UserManager userManager = new UserManager();
-        RoleManager roleManager = new RoleManager();
-        AssignmentManager manager = new AssignmentManager(userManager, roleManager);
-        
-        User user = User.create("testuser", "Test User", "test@example.com");
-        Role role = new Role("Admin", "Administrator");
-        userManager.add(user);
-        roleManager.add(role);
-        
-        RoleAssignment assignment = new PermanentAssignment(user, role, AssignmentMetadata.now("admin", "Test"));
+    @Test
+    void addDuplicateAssignmentThrows() {
+        var assignment = new PermanentAssignment(user1, role1, metadata);
         manager.add(assignment);
-        var found = manager.findByUser(user);
-        assert found.size() == 1 : "Should find 1 assignment for user";
+        var duplicate = new PermanentAssignment(user1, role1, metadata);
+        assertThrows(IllegalArgumentException.class, () -> manager.add(duplicate));
     }
 
-    private void testFindByRole() {
-        UserManager userManager = new UserManager();
-        RoleManager roleManager = new RoleManager();
-        AssignmentManager manager = new AssignmentManager(userManager, roleManager);
-        
-        User user = User.create("testuser", "Test User", "test@example.com");
-        Role role = new Role("Admin", "Administrator");
-        userManager.add(user);
-        roleManager.add(role);
-        
-        RoleAssignment assignment = new PermanentAssignment(user, role, AssignmentMetadata.now("admin", "Test"));
+    @Test
+    void remove() {
+        var assignment = new PermanentAssignment(user1, role1, metadata);
         manager.add(assignment);
-        var found = manager.findByRole(role);
-        assert found.size() == 1 : "Should find 1 assignment for role";
+        assertTrue(manager.remove(assignment));
+        assertTrue(manager.findById(assignment.assignmentId()).isEmpty());
     }
 
-    private void testFindByFilter() {
-        UserManager userManager = new UserManager();
-        RoleManager roleManager = new RoleManager();
-        AssignmentManager manager = new AssignmentManager(userManager, roleManager);
-        
-        User user = User.create("testuser", "Test User", "test@example.com");
-        Role role = new Role("Admin", "Administrator");
-        userManager.add(user);
-        roleManager.add(role);
-        
-        RoleAssignment assignment = new PermanentAssignment(user, role, AssignmentMetadata.now("admin", "Test"));
-        manager.add(assignment);
-        var filtered = manager.findByFilter(AssignmentFilters.activeOnly());
-        assert filtered.size() == 1 : "Should find 1 active assignment";
+    @Test
+    void findByUser() {
+        var assignment1 = new PermanentAssignment(user1, role1, metadata);
+        var assignment2 = new PermanentAssignment(user1, role2, metadata);
+        manager.add(assignment1);
+        manager.add(assignment2);
+        var list = manager.findByUser(user1);
+        assertEquals(2, list.size());
     }
 
-    private void testGetActiveAssignments() {
-        UserManager userManager = new UserManager();
-        RoleManager roleManager = new RoleManager();
-        AssignmentManager manager = new AssignmentManager(userManager, roleManager);
-        
-        User user = User.create("testuser", "Test User", "test@example.com");
-        Role role = new Role("Admin", "Administrator");
-        userManager.add(user);
-        roleManager.add(role);
-        
-        RoleAssignment assignment = new PermanentAssignment(user, role, AssignmentMetadata.now("admin", "Test"));
-        manager.add(assignment);
+    @Test
+    void findByRole() {
+        var assignment1 = new PermanentAssignment(user1, role1, metadata);
+        var assignment2 = new PermanentAssignment(user2, role1, metadata);
+        manager.add(assignment1);
+        manager.add(assignment2);
+        var list = manager.findByRole(role1);
+        assertEquals(2, list.size());
+    }
+
+    @Test
+    void getActiveAssignments() {
+        var activeAssignment = new PermanentAssignment(user1, role1, metadata);
+        var expiredAssignment = new TemporaryAssignment(user2, role1, metadata);
+        expiredAssignment.extend(LocalDate.parse("2010-01-01").atStartOfDay().toString());
+        manager.add(activeAssignment);
+        manager.add(expiredAssignment);
         var active = manager.getActiveAssignments();
-        assert active.size() == 1 : "Should have 1 active assignment";
+        assertEquals(1, active.size());
     }
 
-    private void testUserHasRole() {
-        UserManager userManager = new UserManager();
-        RoleManager roleManager = new RoleManager();
-        AssignmentManager manager = new AssignmentManager(userManager, roleManager);
-        
-        User user = User.create("testuser", "Test User", "test@example.com");
-        Role role = new Role("Admin", "Administrator");
-        userManager.add(user);
-        roleManager.add(role);
-        
-        RoleAssignment assignment = new PermanentAssignment(user, role, AssignmentMetadata.now("admin", "Test"));
+    @Test
+    void getExpiredAssignments() {
+        var activeAssignment = new PermanentAssignment(user1, role1, metadata);
+        var expiredAssignment = new TemporaryAssignment(user2, role1, metadata);
+        expiredAssignment.extend(LocalDate.parse("2010-01-01").atStartOfDay().toString());
+        manager.add(activeAssignment);
+        manager.add(expiredAssignment);
+        var expired = manager.getExpiredAssignments();
+        assertEquals(1, expired.size());
+    }
+
+    @Test
+    void userHasRole() {
+        var assignment = new PermanentAssignment(user1, role1, metadata);
         manager.add(assignment);
-        assert manager.userHasRole(user, role) : "User should have role";
+        assertTrue(manager.userHasRole(user1, role1));
+        assertFalse(manager.userHasRole(user1, role2));
     }
 
-    private void testUserHasPermission() {
-        UserManager userManager = new UserManager();
-        RoleManager roleManager = new RoleManager();
-        AssignmentManager manager = new AssignmentManager(userManager, roleManager);
-        
-        User user = User.create("testuser", "Test User", "test@example.com");
-        Role role = new Role("Admin", "Administrator");
-        Permission perm = new Permission("READ", "users", "Read users");
-        role.addPermission(perm);
-        userManager.add(user);
-        roleManager.add(role);
-        
-        RoleAssignment assignment = new PermanentAssignment(user, role, AssignmentMetadata.now("admin", "Test"));
+    @Test
+    void userHasPermission() {
+        var assignment = new PermanentAssignment(user1, role1, metadata);
         manager.add(assignment);
-        assert manager.userHasPermission(user, "READ", "users") : "User should have permission";
+        assertTrue(manager.userHasPermission(user1, "read", "users"));
+        assertFalse(manager.userHasPermission(user1, "write", "users"));
     }
 
-    private void testGetUserPermissions() {
-        UserManager userManager = new UserManager();
-        RoleManager roleManager = new RoleManager();
-        AssignmentManager manager = new AssignmentManager(userManager, roleManager);
-        
-        User user = User.create("testuser", "Test User", "test@example.com");
-        Role role = new Role("Admin", "Administrator");
-        Permission perm = new Permission("READ", "users", "Read users");
-        role.addPermission(perm);
-        userManager.add(user);
-        roleManager.add(role);
-        
-        RoleAssignment assignment = new PermanentAssignment(user, role, AssignmentMetadata.now("admin", "Test"));
+    @Test
+    void getUserPermissions() {
+        var perm2 = new Permission("write", "users", "Write users");
+        role1.addPermission(perm2);
+        var assignment = new PermanentAssignment(user1, role1, metadata);
         manager.add(assignment);
-        var perms = manager.getUserPermissions(user);
-        assert perms.size() == 1 : "User should have 1 permission";
+        var permissions = manager.getUserPermissions(user1);
+        assertEquals(2, permissions.size());
+        assertTrue(permissions.stream().anyMatch(p -> p.matches("read", "users")));
+        assertTrue(permissions.stream().anyMatch(p -> p.matches("write", "users")));
     }
 
-    private void testRevokeAssignment() {
-        UserManager userManager = new UserManager();
-        RoleManager roleManager = new RoleManager();
-        AssignmentManager manager = new AssignmentManager(userManager, roleManager);
-        
-        User user = User.create("testuser", "Test User", "test@example.com");
-        Role role = new Role("Admin", "Administrator");
-        userManager.add(user);
-        roleManager.add(role);
-        
-        PermanentAssignment assignment = new PermanentAssignment(user, role, AssignmentMetadata.now("admin", "Test"));
+    @Test
+    void findByFilter() {
+        var assignment1 = new PermanentAssignment(user1, role1, metadata);
+        var assignment2 = new TemporaryAssignment(user2, role1, metadata);
+        assignment2.extend(LocalDate.parse("2040-01-01").atStartOfDay().toString());
+        manager.add(assignment1);
+        manager.add(assignment2);
+        var list = manager.findByFilter(AssignmentFilters.activeOnly());
+        assertEquals(2, list.size());
+    }
+
+    @Test
+    void findAllWithFilterAndSorter() {
+        var assignment1 = new PermanentAssignment(user1, role1, metadata);
+        var assignment2 = new PermanentAssignment(user2, role1, metadata);
+        manager.add(assignment1);
+        manager.add(assignment2);
+        var list = manager.findAll(AssignmentFilters.activeOnly(), AssignmentSorters.byUsername());
+        assertEquals(2, list.size());
+    }
+
+    @Test
+    void revokeAssignment() {
+        var assignment = new PermanentAssignment(user1, role1, metadata);
         manager.add(assignment);
         manager.revokeAssignment(assignment.assignmentId());
-        assert !assignment.isActive() : "Assignment should be revoked";
+        assertFalse(assignment.isActive());
     }
 
-    private void testExtendTemporaryAssignment() {
-        UserManager userManager = new UserManager();
-        RoleManager roleManager = new RoleManager();
-        AssignmentManager manager = new AssignmentManager(userManager, roleManager);
-        
-        User user = User.create("testuser", "Test User", "test@example.com");
-        Role role = new Role("Admin", "Administrator");
-        userManager.add(user);
-        roleManager.add(role);
-        
-        TemporaryAssignment assignment = new TemporaryAssignment(user, role, AssignmentMetadata.now("admin", "Test"));
-        assignment.extend("2025-12-31T23:59:59");
+    @Test
+    void extendTemporaryAssignment() {
+        var assignment = new TemporaryAssignment(user1, role1, metadata);
+        assignment.extend(LocalDate.parse("2025-01-01").atStartOfDay().toString());
         manager.add(assignment);
-        manager.extendTemporaryAssignment(assignment.assignmentId(), "2026-12-31T23:59:59");
-        assert assignment.getExpiresAt().equals("2026-12-31T23:59:59") : "Expiration date should be extended";
+        manager.extendTemporaryAssignment(assignment.assignmentId(), 
+            LocalDate.parse("2026-01-01").atStartOfDay().toString());
+        assertEquals("2026-01-01T00:00:00", assignment.getExpiresAt());
+    }
+
+    @Test
+    void extendPermanentAssignmentThrows() {
+        var assignment = new PermanentAssignment(user1, role1, metadata);
+        manager.add(assignment);
+        assertThrows(IllegalArgumentException.class, 
+            () -> manager.extendTemporaryAssignment(assignment.assignmentId(), "2026-01-01T00:00:00"));
+    }
+
+    @Test
+    void clear() {
+        var assignment = new PermanentAssignment(user1, role1, metadata);
+        manager.add(assignment);
+        manager.clear();
+        assertEquals(0, manager.count());
     }
 }

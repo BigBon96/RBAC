@@ -1,94 +1,92 @@
-public class UserManagerTest {
-    public static void main(String[] args) {
-        UserManagerTest test = new UserManagerTest();
-        test.testAdd();
-        test.testRemove();
-        test.testFindById();
-        test.testFindByUsername();
-        test.testFindByEmail();
-        test.testFindByFilter();
-        test.testExists();
-        test.testUpdate();
-        test.testClear();
-        System.out.println("All UserManager tests passed!");
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class UserManagerTest {
+
+    UserManager manager;
+
+    @BeforeEach
+    void setUp() {
+        manager = new UserManager();
     }
 
-    private void testAdd() {
-        UserManager manager = new UserManager();
-        User user = User.create("testuser", "Test User", "test@example.com");
-        manager.add(user);
-        assert manager.count() == 1 : "User should be added";
-        assert manager.exists("testuser") : "User should exist";
+    @Test
+    void addAndFindById() {
+        var u = User.create("john_doe", "John Doe", "john@mail.com");
+        manager.add(u);
+        assertEquals(u, manager.findById("john_doe").orElse(null));
+        assertEquals(1, manager.count());
     }
 
-    private void testRemove() {
-        UserManager manager = new UserManager();
-        User user = User.create("testuser", "Test User", "test@example.com");
-        manager.add(user);
-        boolean removed = manager.remove(user);
-        assert removed : "User should be removed";
-        assert manager.count() == 0 : "Count should be 0";
+    @Test
+    void addDuplicateThrows() {
+        var u = User.create("john_doe", "John Doe", "john@mail.com");
+        manager.add(u);
+        assertThrows(IllegalArgumentException.class, () -> manager.add(u));
     }
 
-    private void testFindById() {
-        UserManager manager = new UserManager();
-        User user = User.create("testuser", "Test User", "test@example.com");
-        manager.add(user);
-        var found = manager.findById("testuser");
-        assert found.isPresent() : "User should be found";
-        assert found.get().equals(user) : "Found user should match";
+    @Test
+    void remove() {
+        var u = User.create("john_doe", "John Doe", "john@mail.com");
+        manager.add(u);
+        assertTrue(manager.remove(u));
+        assertTrue(manager.findById("john_doe").isEmpty());
     }
 
-    private void testFindByUsername() {
-        UserManager manager = new UserManager();
-        User user = User.create("testuser", "Test User", "test@example.com");
-        manager.add(user);
-        var found = manager.findByUsername("testuser");
-        assert found.isPresent() : "User should be found by username";
+    @Test
+    void findByUsername() {
+        var u = User.create("jane_admin", "Jane Admin", "jane@mail.com");
+        manager.add(u);
+        assertEquals(u, manager.findByUsername("jane_admin").orElse(null));
     }
 
-    private void testFindByEmail() {
-        UserManager manager = new UserManager();
-        User user = User.create("testuser", "Test User", "test@example.com");
-        manager.add(user);
-        var found = manager.findByEmail("test@example.com");
-        assert found.isPresent() : "User should be found by email";
+    @Test
+    void findByEmail() {
+        var u = User.create("bob", "Bob User", "bob@company.com");
+        manager.add(u);
+        assertEquals(u, manager.findByEmail("bob@company.com").orElse(null));
     }
 
-    private void testFindByFilter() {
-        UserManager manager = new UserManager();
-        User user1 = User.create("user1", "John Doe", "john@example.com");
-        User user2 = User.create("user2", "Jane Doe", "jane@example.com");
-        manager.add(user1);
-        manager.add(user2);
-        var filtered = manager.findByFilter(UserFilters.byEmailDomain("@example.com"));
-        assert filtered.size() == 2 : "Should find 2 users";
+    @Test
+    void exists() {
+        manager.add(User.create("alice", "Alice", "alice@mail.com"));
+        assertTrue(manager.exists("alice"));
+        assertFalse(manager.exists("bob"));
     }
 
-    private void testExists() {
-        UserManager manager = new UserManager();
-        User user = User.create("testuser", "Test User", "test@example.com");
-        manager.add(user);
-        assert manager.exists("testuser") : "User should exist";
-        assert !manager.exists("nonexistent") : "Non-existent user should not exist";
+    @Test
+    void update() {
+        manager.add(User.create("john", "John", "john@mail.com"));
+        manager.update("john", "John Smith", "john.smith@mail.com");
+        var u = manager.findById("john").orElseThrow();
+        assertEquals("John Smith", u.fullName());
+        assertEquals("john.smith@mail.com", u.email());
     }
 
-    private void testUpdate() {
-        UserManager manager = new UserManager();
-        User user = User.create("testuser", "Test User", "test@example.com");
-        manager.add(user);
-        manager.update("testuser", "Updated Name", "updated@example.com");
-        var updated = manager.findByUsername("testuser");
-        assert updated.isPresent() : "User should exist after update";
-        assert updated.get().fullName().equals("Updated Name") : "Full name should be updated";
-        assert updated.get().email().equals("updated@example.com") : "Email should be updated";
+    @Test
+    void findByFilter() {
+        manager.add(User.create("john_1", "John A", "john@a.com"));
+        manager.add(User.create("jane_2", "Jane B", "jane@b.com"));
+        var list = manager.findByFilter(UserFilters.byUsernameContains("john"));
+        assertEquals(1, list.size());
+        assertEquals("john_1", list.get(0).username());
     }
 
-    private void testClear() {
-        UserManager manager = new UserManager();
-        User user = User.create("testuser", "Test User", "test@example.com");
-        manager.add(user);
+    @Test
+    void findAllWithFilterAndSorter() {
+        manager.add(User.create("john_1", "John A", "john@a.com"));
+        manager.add(User.create("jane_2", "Jane B", "jane@b.com"));
+        var list = manager.findAll(UserFilters.byEmailDomain("@a.com"), UserSorters.byUsername());
+        assertEquals(1, list.size());
+        assertEquals("john_1", list.get(0).username());
+    }
+
+    @Test
+    void clear() {
+        manager.add(User.create("u1u", "U1", "u1@m.com"));
         manager.clear();
-        assert manager.count() == 0 : "Count should be 0 after clear";
+        assertEquals(0, manager.count());
     }
 }

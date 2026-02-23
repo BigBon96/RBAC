@@ -1,105 +1,108 @@
-public class RoleManagerTest {
-    public static void main(String[] args) {
-        RoleManagerTest test = new RoleManagerTest();
-        test.testAdd();
-        test.testRemove();
-        test.testFindById();
-        test.testFindByName();
-        test.testFindByFilter();
-        test.testExists();
-        test.testAddPermission();
-        test.testRemovePermission();
-        test.testFindRolesWithPermission();
-        test.testClear();
-        System.out.println("All RoleManager tests passed!");
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class RoleManagerTest {
+
+    RoleManager manager;
+    Role role1;
+    Role role2;
+    Permission perm1;
+    Permission perm2;
+
+    @BeforeEach
+    void setUp() {
+        manager = new RoleManager();
+        role1 = new Role("admin", "Administrator role");
+        role2 = new Role("user", "Regular user");
+        perm1 = new Permission("read", "users", "Read users");
+        perm2 = new Permission("write", "users", "Write users");
     }
 
-    private void testAdd() {
-        RoleManager manager = new RoleManager();
-        Role role = new Role("Admin", "Administrator role");
-        manager.add(role);
-        assert manager.count() == 1 : "Role should be added";
-        assert manager.exists("Admin") : "Role should exist";
+    @Test
+    void addAndFindById() {
+        manager.add(role1);
+        assertEquals(role1, manager.findById(role1.getId()).orElse(null));
+        assertEquals(1, manager.count());
     }
 
-    private void testRemove() {
-        RoleManager manager = new RoleManager();
-        Role role = new Role("Admin", "Administrator role");
-        manager.add(role);
-        boolean removed = manager.remove(role);
-        assert removed : "Role should be removed";
-        assert manager.count() == 0 : "Count should be 0";
+    @Test
+    void addDuplicateThrows() {
+        manager.add(role1);
+        assertThrows(IllegalArgumentException.class, () -> manager.add(role1));
     }
 
-    private void testFindById() {
-        RoleManager manager = new RoleManager();
-        Role role = new Role("Admin", "Administrator role");
-        manager.add(role);
-        var found = manager.findById(role.getId());
-        assert found.isPresent() : "Role should be found";
-        assert found.get().equals(role) : "Found role should match";
+    @Test
+    void remove() {
+        manager.add(role1);
+        assertTrue(manager.remove(role1));
+        assertTrue(manager.findById(role1.getId()).isEmpty());
+        assertEquals(0, manager.count());
     }
 
-    private void testFindByName() {
-        RoleManager manager = new RoleManager();
-        Role role = new Role("Admin", "Administrator role");
-        manager.add(role);
-        var found = manager.findByName("Admin");
-        assert found.isPresent() : "Role should be found by name";
+    @Test
+    void findByName() {
+        manager.add(role1);
+        assertEquals(role1, manager.findByName("admin").orElse(null));
     }
 
-    private void testFindByFilter() {
-        RoleManager manager = new RoleManager();
-        Role role1 = new Role("Admin", "Administrator");
-        Role role2 = new Role("User", "Regular user");
+    @Test
+    void exists() {
+        manager.add(role1);
+        assertTrue(manager.exists("admin"));
+        assertFalse(manager.exists("nonexistent"));
+    }
+
+    @Test
+    void findByFilter() {
         manager.add(role1);
         manager.add(role2);
-        var filtered = manager.findByFilter(RoleFilters.byNameContains("Admin"));
-        assert filtered.size() == 1 : "Should find 1 role";
+        var list = manager.findByFilter(RoleFilters.byNameContains("admin"));
+        assertEquals(1, list.size());
+        assertEquals("admin", list.get(0).getName());
     }
 
-    private void testExists() {
-        RoleManager manager = new RoleManager();
-        Role role = new Role("Admin", "Administrator role");
-        manager.add(role);
-        assert manager.exists("Admin") : "Role should exist";
-        assert !manager.exists("Nonexistent") : "Non-existent role should not exist";
-    }
-
-    private void testAddPermission() {
-        RoleManager manager = new RoleManager();
-        Role role = new Role("Admin", "Administrator role");
-        manager.add(role);
-        Permission perm = new Permission("READ", "users", "Read users");
-        manager.addPermissionToRole("Admin", perm);
-        assert role.hasPermission(perm) : "Role should have permission";
-    }
-
-    private void testRemovePermission() {
-        RoleManager manager = new RoleManager();
-        Role role = new Role("Admin", "Administrator role");
-        Permission perm = new Permission("READ", "users", "Read users");
-        role.addPermission(perm);
-        manager.add(role);
-        manager.removePermissionFromRole("Admin", perm);
-        assert !role.hasPermission(perm) : "Role should not have permission";
-    }
-
-    private void testFindRolesWithPermission() {
-        RoleManager manager = new RoleManager();
-        Role role1 = new Role("Admin", "Administrator");
-        Permission perm = new Permission("READ", "users", "Read users");
-        role1.addPermission(perm);
+    @Test
+    void findAllWithFilterAndSorter() {
+        role1.addPermission(perm1);
+        role1.addPermission(perm2);
+        role2.addPermission(perm1);
         manager.add(role1);
-        var roles = manager.findRolesWithPermission("READ", "users");
-        assert roles.size() == 1 : "Should find 1 role with permission";
+        manager.add(role2);
+        var list = manager.findAll(RoleFilters.hasAtLeastNPermissions(1), RoleSorters.byPermissionCount());
+        assertEquals(2, list.size());
     }
 
-    private void testClear() {
-        RoleManager manager = new RoleManager();
-        Role role = new Role("Admin", "Administrator role");
-        manager.add(role);
+    @Test
+    void addPermissionToRole() {
+        manager.add(role1);
+        manager.addPermissionToRole("admin", perm1);
+        assertTrue(role1.hasPermission(perm1));
+    }
+
+    @Test
+    void removePermissionFromRole() {
+        role1.addPermission(perm1);
+        manager.add(role1);
+        manager.removePermissionFromRole("admin", perm1);
+        assertFalse(role1.hasPermission(perm1));
+    }
+
+    @Test
+    void findRolesWithPermission() {
+        role1.addPermission(perm1);
+        manager.add(role1);
+        manager.add(role2);
+        var list = manager.findRolesWithPermission("read", "users");
+        assertEquals(1, list.size());
+        assertEquals("admin", list.get(0).getName());
+    }
+
+    @Test
+    void clear() {
+        manager.add(role1);
         manager.clear();
-        assert manager.count() == 0 : "Count should be 0 after clear";
+        assertEquals(0, manager.count());
     }
 }
