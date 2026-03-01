@@ -1,211 +1,32 @@
-import java.time.LocalDate;
-import java.util.List;
+import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        System.out.println("=== Демонстрация работоспособности всех подпунктов ===\n");
-
-        // Базовые модели
-        System.out.println("--- Базовые модели ---");
-        User user = new User("username", "full name", "email@mail.ru");
-        User user2 = new User("operator", "full name", "email@mail.ru");
-        User user3 = new User("admin_user", "Admin User", "admin@company.com");
+        RBACSystem system = new RBACSystem();
+        system.initialize();
         
-        Role role = new Role("admin", "admin permissions");
-        Permission p1 = new Permission("read", "users", "can read users");
-        Permission p2 = new Permission("delete", "users", "can delete users");
-        role.addPermission(p1);
-        role.addPermission(p2);
+        Scanner scanner = new Scanner(System.in);
         
-        AssignmentMetadata am = AssignmentMetadata.now(user2.username(), "with some reason");
-
-        TemporaryAssignment ta = new TemporaryAssignment(user, role, am);
-        ta.extend(LocalDate.parse("2040-02-20").atStartOfDay().toString());
-        System.out.println("TemporaryAssignment (будущее):");
-        System.out.println(ta.summary());
+        System.out.println("=== RBAC System ===");
+        System.out.println("Введите 'help' для справки по командам");
+        System.out.println("Введите 'exit' для выхода\n");
         
-        ta.extend(LocalDate.parse("2010-02-20").atStartOfDay().toString());
-        System.out.println("\nTemporaryAssignment (прошлое - истекшее):");
-        System.out.println(ta.summary());
-
-        PermanentAssignment pa = new PermanentAssignment(user, role, am);
-        System.out.println("\nPermanentAssignment (активное):");
-        System.out.println(pa.summary());
-        pa.revoke();
-        System.out.println("\nPermanentAssignment (отозванное):");
-        System.out.println(pa.summary());
-
-        // Подзадача 2.1: UserFilter
-        System.out.println("\n=== Подзадача 2.1: UserFilter ===");
-        List<User> users = List.of(user, user2, user3);
-        
-        System.out.println("\nФильтр byUsername('username'):");
-        UserFilter filter1 = UserFilters.byUsername("username");
-        users.stream().filter(u -> filter1.test(u)).forEach(u -> System.out.println("  " + u.format()));
-        
-        System.out.println("\nФильтр byUsernameContains('admin'):");
-        UserFilter filter2 = UserFilters.byUsernameContains("admin");
-        users.stream().filter(u -> filter2.test(u)).forEach(u -> System.out.println("  " + u.format()));
-        
-        System.out.println("\nФильтр byEmailDomain('@company.com'):");
-        UserFilter filter3 = UserFilters.byEmailDomain("@company.com");
-        users.stream().filter(u -> filter3.test(u)).forEach(u -> System.out.println("  " + u.format()));
-        
-        System.out.println("\nФильтр byFullNameContains('Admin'):");
-        UserFilter filter4 = UserFilters.byFullNameContains("Admin");
-        users.stream().filter(u -> filter4.test(u)).forEach(u -> System.out.println("  " + u.format()));
-        
-        System.out.println("\nКомбинированный фильтр (byUsernameContains OR byEmailDomain):");
-        UserFilter combined = UserFilters.byUsernameContains("admin").or(UserFilters.byEmailDomain("@company.com"));
-        users.stream().filter(u -> combined.test(u)).forEach(u -> System.out.println("  " + u.format()));
-
-        // Подзадача 2.2: RoleFilter
-        System.out.println("\n=== Подзадача 2.2: RoleFilter ===");
-        Role role2 = new Role("user", "regular user");
-        role2.addPermission(p1);
-        List<Role> roles = List.of(role, role2);
-        
-        System.out.println("\nФильтр byName('admin'):");
-        RoleFilter roleFilter1 = RoleFilters.byName("admin");
-        roles.stream().filter(r -> roleFilter1.test(r)).forEach(r -> System.out.println("  " + r.getName()));
-        
-        System.out.println("\nФильтр byNameContains('user'):");
-        RoleFilter roleFilter2 = RoleFilters.byNameContains("user");
-        roles.stream().filter(r -> roleFilter2.test(r)).forEach(r -> System.out.println("  " + r.getName()));
-        
-        System.out.println("\nФильтр hasPermission(p1):");
-        RoleFilter roleFilter3 = RoleFilters.hasPermission(p1);
-        roles.stream().filter(r -> roleFilter3.test(r)).forEach(r -> System.out.println("  " + r.getName()));
-        
-        System.out.println("\nФильтр hasPermission('read', 'users'):");
-        RoleFilter roleFilter4 = RoleFilters.hasPermission("read", "users");
-        roles.stream().filter(r -> roleFilter4.test(r)).forEach(r -> System.out.println("  " + r.getName()));
-        
-        System.out.println("\nФильтр hasAtLeastNPermissions(2):");
-        RoleFilter roleFilter5 = RoleFilters.hasAtLeastNPermissions(2);
-        roles.stream().filter(r -> roleFilter5.test(r)).forEach(r -> System.out.println("  " + r.getName() + " (" + r.getPermissions().size() + " permissions)"));
-
-        // Подзадача 2.3: AssignmentFilter
-        System.out.println("\n=== Подзадача 2.3: AssignmentFilter ===");
-        TemporaryAssignment ta2 = new TemporaryAssignment(user2, role, am);
-        ta2.extend(LocalDate.parse("2040-02-20").atStartOfDay().toString());
-        PermanentAssignment pa2 = new PermanentAssignment(user3, role2, am);
-        List<RoleAssignment> assignments = List.of(ta, ta2, pa, pa2);
-        
-        System.out.println("\nФильтр byUser(user):");
-        AssignmentFilter assignFilter1 = AssignmentFilters.byUser(user);
-        assignments.stream().filter(a -> assignFilter1.test(a)).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName()));
-        
-        System.out.println("\nФильтр byUsername('operator'):");
-        AssignmentFilter assignFilter2 = AssignmentFilters.byUsername("operator");
-        assignments.stream().filter(a -> assignFilter2.test(a)).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName()));
-        
-        System.out.println("\nФильтр byRole(role):");
-        AssignmentFilter assignFilter3 = AssignmentFilters.byRole(role);
-        assignments.stream().filter(a -> assignFilter3.test(a)).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName()));
-        
-        System.out.println("\nФильтр activeOnly():");
-        AssignmentFilter assignFilter4 = AssignmentFilters.activeOnly();
-        assignments.stream().filter(a -> assignFilter4.test(a)).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName() + " (active: " + a.isActive() + ")"));
-        
-        System.out.println("\nФильтр inactiveOnly():");
-        AssignmentFilter assignFilter5 = AssignmentFilters.inactiveOnly();
-        assignments.stream().filter(a -> assignFilter5.test(a)).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName() + " (active: " + a.isActive() + ")"));
-        
-        System.out.println("\nФильтр byType('PERMANENT'):");
-        AssignmentFilter assignFilter6 = AssignmentFilters.byType("PERMANENT");
-        assignments.stream().filter(a -> assignFilter6.test(a)).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName() + " (" + a.assignmentType() + ")"));
-
-        // Подзадача 2.4: Sorters
-        System.out.println("\n=== Подзадача 2.4: Sorters ===");
-        
-        System.out.println("\nСортировка User по username:");
-        users.stream().sorted(UserSorters.byUsername()).forEach(u -> System.out.println("  " + u.username()));
-        
-        System.out.println("\nСортировка User по fullName:");
-        users.stream().sorted(UserSorters.byFullName()).forEach(u -> System.out.println("  " + u.fullName()));
-        
-        System.out.println("\nСортировка Role по количеству прав:");
-        roles.stream().sorted(RoleSorters.byPermissionCount()).forEach(r -> System.out.println("  " + r.getName() + " (" + r.getPermissions().size() + " permissions)"));
-        
-        System.out.println("\nСортировка Assignment по username:");
-        assignments.stream().sorted(AssignmentSorters.byUsername()).forEach(a -> System.out.println("  " + a.user().username() + " -> " + a.role().getName()));
-
-        // Подзадача 3.1: Repository
-        System.out.println("\n=== Подзадача 3.1: Repository ===");
-        System.out.println("Repository интерфейс реализован в UserManager, RoleManager, AssignmentManager");
-
-        // Подзадача 3.2: UserManager
-        System.out.println("\n=== Подзадача 3.2: UserManager ===");
-        UserManager userManager = new UserManager();
-        userManager.add(user);
-        userManager.add(user2);
-        userManager.add(user3);
-        
-        System.out.println("\nВсего пользователей: " + userManager.count());
-        System.out.println("Поиск по username 'username': " + userManager.findByUsername("username").map(User::format).orElse("не найден"));
-        System.out.println("Поиск по email 'admin@company.com': " + userManager.findByEmail("admin@company.com").map(User::format).orElse("не найден"));
-        
-        System.out.println("\nФильтрация по домену '@company.com':");
-        userManager.findByFilter(UserFilters.byEmailDomain("@company.com")).forEach(u -> System.out.println("  " + u.format()));
-        
-        System.out.println("\nФильтрация и сортировка (byUsernameContains + сортировка по email):");
-        userManager.findAll(UserFilters.byUsernameContains("user"), UserSorters.byEmail()).forEach(u -> System.out.println("  " + u.format()));
-        
-        userManager.update("username", "Updated Full Name", "updated@mail.ru");
-        System.out.println("\nПосле обновления пользователя 'username':");
-        userManager.findByUsername("username").ifPresent(u -> System.out.println("  " + u.format()));
-
-        // Подзадача 3.3: RoleManager
-        System.out.println("\n=== Подзадача 3.3: RoleManager ===");
-        RoleManager roleManager = new RoleManager();
-        roleManager.add(role);
-        roleManager.add(role2);
-        
-        System.out.println("\nВсего ролей: " + roleManager.count());
-        System.out.println("Поиск по имени 'admin': " + roleManager.findByName("admin").map(Role::getName).orElse("не найдена"));
-        
-        System.out.println("\nФильтрация ролей с минимум 2 правами:");
-        roleManager.findByFilter(RoleFilters.hasAtLeastNPermissions(2)).forEach(r -> System.out.println("  " + r.getName() + " (" + r.getPermissions().size() + " permissions)"));
-        
-        Permission p3 = new Permission("write", "users", "can write users");
-        roleManager.addPermissionToRole("admin", p3);
-        System.out.println("\nПосле добавления права 'write' к роли 'admin':");
-        roleManager.findByName("admin").ifPresent(r -> System.out.println("  " + r.getName() + " имеет " + r.getPermissions().size() + " прав"));
-        
-        System.out.println("\nРоли с правом 'read' на 'users':");
-        roleManager.findRolesWithPermission("read", "users").forEach(r -> System.out.println("  " + r.getName()));
-
-        // Подзадача 3.4: AssignmentManager
-        System.out.println("\n=== Подзадача 3.4: AssignmentManager ===");
-        AssignmentManager assignmentManager = new AssignmentManager(userManager, roleManager);
-        
-        TemporaryAssignment ta3 = new TemporaryAssignment(user, role, am);
-        ta3.extend(LocalDate.parse("2040-02-20").atStartOfDay().toString());
-        PermanentAssignment pa3 = new PermanentAssignment(user2, role2, am);
-        assignmentManager.add(ta3);
-        assignmentManager.add(pa3);
-        
-        System.out.println("\nВсего назначений: " + assignmentManager.count());
-        System.out.println("Активных назначений: " + assignmentManager.getActiveAssignments().size());
-        
-        System.out.println("\nНазначения для пользователя 'username':");
-        assignmentManager.findByUser(user).forEach(a -> System.out.println("  " + a.role().getName() + " (active: " + a.isActive() + ")"));
-        
-        System.out.println("\nПроверка: user имеет роль 'admin'? " + assignmentManager.userHasRole(user, role));
-        System.out.println("Проверка: user имеет право 'read' на 'users'? " + assignmentManager.userHasPermission(user, "read", "users"));
-        
-        System.out.println("\nВсе права пользователя 'username':");
-        assignmentManager.getUserPermissions(user).forEach(p -> System.out.println("  " + p.format()));
-        
-        System.out.println("\nФильтрация активных назначений:");
-        assignmentManager.findByFilter(AssignmentFilters.activeOnly()).forEach(a -> 
-            System.out.println("  " + a.user().username() + " -> " + a.role().getName() + " (active: " + a.isActive() + ")"));
-        
-        System.out.println("\nФильтрация и сортировка назначений:");
-        assignmentManager.findAll(AssignmentFilters.activeOnly(), AssignmentSorters.byUsername()).forEach(a -> 
-            System.out.println("  " + a.user().username() + " -> " + a.role().getName()));
-
-        System.out.println("\n=== Все подпункты успешно продемонстрированы! ===");
+        while (true) {
+            System.out.print("> ");
+            String input = scanner.nextLine().trim();
+            
+            if (input.isEmpty()) {
+                continue;
+            }
+            
+            Command command = CommandParser.parse(input);
+            if (command != null) {
+                command.execute(scanner, system);
+            } else {
+                System.out.println("Неизвестная команда. Введите 'help' для справки.");
+            }
+            
+            System.out.println();
+        }
     }
 }
