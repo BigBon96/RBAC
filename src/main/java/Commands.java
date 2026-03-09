@@ -9,29 +9,29 @@ public class Commands {
     // ========== Команды пользователей ==========
     
     public static void createUser(Scanner scanner, RBACSystem system) {
-        System.out.print("Введите username: ");
-        String username = scanner.nextLine().trim();
-        System.out.print("Введите full name: ");
-        String fullName = scanner.nextLine().trim();
-        System.out.print("Введите email: ");
-        String email = scanner.nextLine().trim();
+        String username = ConsoleUtils.promptString(scanner, "Введите username: ", true);
+        String fullName = ConsoleUtils.promptString(scanner, "Введите full name: ", true);
+        String email = ConsoleUtils.promptString(scanner, "Введите email: ", true);
         
         try {
             User user = User.create(username, fullName, email);
             system.getUserManager().add(user);
             System.out.println("Пользователь создан: " + user.format());
+            system.getAuditLog().log(
+                    "USER_CREATE",
+                    system.getCurrentUser(),
+                    username,
+                    String.format("Создан пользователь %s", user.format())
+            );
         } catch (IllegalArgumentException e) {
             System.out.println("Ошибка: " + e.getMessage());
         }
     }
     
     public static void updateUser(Scanner scanner, RBACSystem system) {
-        System.out.print("Введите username для обновления: ");
-        String username = scanner.nextLine().trim();
-        System.out.print("Введите новое full name: ");
-        String newFullName = scanner.nextLine().trim();
-        System.out.print("Введите новый email: ");
-        String newEmail = scanner.nextLine().trim();
+        String username = ConsoleUtils.promptString(scanner, "Введите username для обновления: ", true);
+        String newFullName = ConsoleUtils.promptString(scanner, "Введите новое full name: ", true);
+        String newEmail = ConsoleUtils.promptString(scanner, "Введите новый email: ", true);
         
         try {
             system.getUserManager().update(username, newFullName, newEmail);
@@ -42,14 +42,19 @@ public class Commands {
     }
     
     public static void deleteUser(Scanner scanner, RBACSystem system) {
-        System.out.print("Введите username для удаления: ");
-        String username = scanner.nextLine().trim();
+        String username = ConsoleUtils.promptString(scanner, "Введите username для удаления: ", true);
         
         Optional<User> userOpt = system.getUserManager().findByUsername(username);
         if (userOpt.isPresent()) {
             boolean removed = system.getUserManager().remove(userOpt.get());
             if (removed) {
                 System.out.println("Пользователь удалён");
+                system.getAuditLog().log(
+                        "USER_DELETE",
+                        system.getCurrentUser(),
+                        username,
+                        "Пользователь удалён"
+                );
             }
         } else {
             System.out.println("Пользователь не найден");
@@ -61,42 +66,46 @@ public class Commands {
         if (users.isEmpty()) {
             System.out.println("Пользователей нет");
         } else {
-            System.out.println("Список пользователей:");
-            users.forEach(u -> System.out.println("  " + u.format()));
+            System.out.println(FormatUtils.formatHeader("Список пользователей"));
+            String[] headers = {"Username", "Full Name", "Email"};
+            List<String[]> rows = new ArrayList<>();
+            for (User u : users) {
+                rows.add(new String[]{u.username(), u.fullName(), u.email()});
+            }
+            System.out.println(FormatUtils.formatTable(headers, rows));
         }
     }
     
     public static void searchUsers(Scanner scanner, RBACSystem system) {
-        System.out.println("Выберите фильтр:");
+        System.out.println(FormatUtils.formatHeader("Поиск пользователей"));
         System.out.println("1. По username");
         System.out.println("2. По username (содержит)");
         System.out.println("3. По email");
         System.out.println("4. По домену email");
         System.out.println("5. По full name (содержит)");
-        System.out.print("Ваш выбор: ");
-        String choice = scanner.nextLine().trim();
+        String choice = ConsoleUtils.promptString(scanner, "Ваш выбор: ", true);
         
         UserFilter filter = null;
         switch (choice) {
             case "1":
-                System.out.print("Введите username: ");
-                filter = UserFilters.byUsername(scanner.nextLine().trim());
+                filter = UserFilters.byUsername(
+                        ConsoleUtils.promptString(scanner, "Введите username: ", true));
                 break;
             case "2":
-                System.out.print("Введите подстроку: ");
-                filter = UserFilters.byUsernameContains(scanner.nextLine().trim());
+                filter = UserFilters.byUsernameContains(
+                        ConsoleUtils.promptString(scanner, "Введите подстроку: ", true));
                 break;
             case "3":
-                System.out.print("Введите email: ");
-                filter = UserFilters.byEmail(scanner.nextLine().trim());
+                filter = UserFilters.byEmail(
+                        ConsoleUtils.promptString(scanner, "Введите email: ", true));
                 break;
             case "4":
-                System.out.print("Введите домен (например, @company.com): ");
-                filter = UserFilters.byEmailDomain(scanner.nextLine().trim());
+                filter = UserFilters.byEmailDomain(
+                        ConsoleUtils.promptString(scanner, "Введите домен (например, @company.com): ", true));
                 break;
             case "5":
-                System.out.print("Введите подстроку: ");
-                filter = UserFilters.byFullNameContains(scanner.nextLine().trim());
+                filter = UserFilters.byFullNameContains(
+                        ConsoleUtils.promptString(scanner, "Введите подстроку: ", true));
                 break;
             default:
                 System.out.println("Неверный выбор");
@@ -108,30 +117,38 @@ public class Commands {
             System.out.println("Пользователи не найдены");
         } else {
             System.out.println("Найдено пользователей: " + results.size());
-            results.forEach(u -> System.out.println("  " + u.format()));
+            String[] headers = {"Username", "Full Name", "Email"};
+            List<String[]> rows = new ArrayList<>();
+            for (User u : results) {
+                rows.add(new String[]{u.username(), u.fullName(), u.email()});
+            }
+            System.out.println(FormatUtils.formatTable(headers, rows));
         }
     }
     
     // ========== Команды ролей ==========
     
     public static void createRole(Scanner scanner, RBACSystem system) {
-        System.out.print("Введите название роли: ");
-        String name = scanner.nextLine().trim();
-        System.out.print("Введите описание: ");
-        String description = scanner.nextLine().trim();
+        String name = ConsoleUtils.promptString(scanner, "Введите название роли: ", true);
+        String description = ConsoleUtils.promptString(scanner, "Введите описание: ", true);
         
         try {
             Role role = new Role(name, description);
             system.getRoleManager().add(role);
             System.out.println("Роль создана: " + role.getName());
+            system.getAuditLog().log(
+                    "ROLE_CREATE",
+                    system.getCurrentUser(),
+                    name,
+                    "Создана роль"
+            );
         } catch (IllegalArgumentException e) {
             System.out.println("Ошибка: " + e.getMessage());
         }
     }
     
     public static void deleteRole(Scanner scanner, RBACSystem system) {
-        System.out.print("Введите название роли для удаления: ");
-        String roleName = scanner.nextLine().trim();
+        String roleName = ConsoleUtils.promptString(scanner, "Введите название роли для удаления: ", true);
         
         Optional<Role> roleOpt = system.getRoleManager().findByName(roleName);
         if (roleOpt.isPresent()) {
@@ -144,6 +161,12 @@ public class Commands {
             boolean removed = system.getRoleManager().remove(roleOpt.get());
             if (removed) {
                 System.out.println("Роль удалена");
+                system.getAuditLog().log(
+                        "ROLE_DELETE",
+                        system.getCurrentUser(),
+                        roleName,
+                        "Роль удалена"
+                );
             }
         } else {
             System.out.println("Роль не найдена");
@@ -155,20 +178,21 @@ public class Commands {
         if (roles.isEmpty()) {
             System.out.println("Ролей нет");
         } else {
-            System.out.println("Список ролей:");
-            roles.forEach(r -> System.out.println("  " + r.format()));
+            System.out.println(FormatUtils.formatHeader("Список ролей"));
+            String[] headers = {"Name", "Description"};
+            List<String[]> rows = new ArrayList<>();
+            for (Role r : roles) {
+                rows.add(new String[]{r.getName(), r.getDescription()});
+            }
+            System.out.println(FormatUtils.formatTable(headers, rows));
         }
     }
     
     public static void addPermissionToRole(Scanner scanner, RBACSystem system) {
-        System.out.print("Введите название роли: ");
-        String roleName = scanner.nextLine().trim();
-        System.out.print("Введите название права (например, READ): ");
-        String permName = scanner.nextLine().trim();
-        System.out.print("Введите ресурс (например, users): ");
-        String resource = scanner.nextLine().trim();
-        System.out.print("Введите описание: ");
-        String description = scanner.nextLine().trim();
+        String roleName = ConsoleUtils.promptString(scanner, "Введите название роли: ", true);
+        String permName = ConsoleUtils.promptString(scanner, "Введите название права (например, READ): ", true);
+        String resource = ConsoleUtils.promptString(scanner, "Введите ресурс (например, users): ", true);
+        String description = ConsoleUtils.promptString(scanner, "Введите описание: ", true);
         
         try {
             Permission permission = new Permission(permName, resource, description);
@@ -180,12 +204,9 @@ public class Commands {
     }
     
     public static void removePermissionFromRole(Scanner scanner, RBACSystem system) {
-        System.out.print("Введите название роли: ");
-        String roleName = scanner.nextLine().trim();
-        System.out.print("Введите название права: ");
-        String permName = scanner.nextLine().trim();
-        System.out.print("Введите ресурс: ");
-        String resource = scanner.nextLine().trim();
+        String roleName = ConsoleUtils.promptString(scanner, "Введите название роли: ", true);
+        String permName = ConsoleUtils.promptString(scanner, "Введите название права: ", true);
+        String resource = ConsoleUtils.promptString(scanner, "Введите ресурс: ", true);
         
         try {
             Permission permission = new Permission(permName, resource, "temp");
@@ -197,35 +218,31 @@ public class Commands {
     }
     
     public static void searchRoles(Scanner scanner, RBACSystem system) {
-        System.out.println("Выберите фильтр:");
+        System.out.println(FormatUtils.formatHeader("Поиск ролей"));
         System.out.println("1. По названию");
         System.out.println("2. По названию (содержит)");
         System.out.println("3. По праву");
         System.out.println("4. Минимум N прав");
-        System.out.print("Ваш выбор: ");
-        String choice = scanner.nextLine().trim();
+        String choice = ConsoleUtils.promptString(scanner, "Ваш выбор: ", true);
         
         RoleFilter filter = null;
         switch (choice) {
             case "1":
-                System.out.print("Введите название: ");
-                filter = RoleFilters.byName(scanner.nextLine().trim());
+                filter = RoleFilters.byName(
+                        ConsoleUtils.promptString(scanner, "Введите название: ", true));
                 break;
             case "2":
-                System.out.print("Введите подстроку: ");
-                filter = RoleFilters.byNameContains(scanner.nextLine().trim());
+                filter = RoleFilters.byNameContains(
+                        ConsoleUtils.promptString(scanner, "Введите подстроку: ", true));
                 break;
             case "3":
-                System.out.print("Введите название права: ");
-                String permName = scanner.nextLine().trim();
-                System.out.print("Введите ресурс: ");
-                String resource = scanner.nextLine().trim();
+                String permName = ConsoleUtils.promptString(scanner, "Введите название права: ", true);
+                String resource = ConsoleUtils.promptString(scanner, "Введите ресурс: ", true);
                 filter = RoleFilters.hasPermission(permName, resource);
                 break;
             case "4":
-                System.out.print("Введите минимальное количество прав: ");
                 try {
-                    int n = Integer.parseInt(scanner.nextLine().trim());
+                    int n = ConsoleUtils.promptInt(scanner, "Введите минимальное количество прав: ", 0, Integer.MAX_VALUE);
                     filter = RoleFilters.hasAtLeastNPermissions(n);
                 } catch (NumberFormatException e) {
                     System.out.println("Неверное число");
@@ -242,21 +259,22 @@ public class Commands {
             System.out.println("Роли не найдены");
         } else {
             System.out.println("Найдено ролей: " + results.size());
-            results.forEach(r -> System.out.println("  " + r.format()));
+            String[] headers = {"Name", "Description"};
+            List<String[]> rows = new ArrayList<>();
+            for (Role r : results) {
+                rows.add(new String[]{r.getName(), r.getDescription()});
+            }
+            System.out.println(FormatUtils.formatTable(headers, rows));
         }
     }
     
     // ========== Команды назначений ==========
     
     public static void createAssignment(Scanner scanner, RBACSystem system) {
-        System.out.print("Введите username: ");
-        String username = scanner.nextLine().trim();
-        System.out.print("Введите название роли: ");
-        String roleName = scanner.nextLine().trim();
-        System.out.print("Введите тип (PERMANENT/TEMPORARY): ");
-        String type = scanner.nextLine().trim().toUpperCase();
-        System.out.print("Введите причину назначения: ");
-        String reason = scanner.nextLine().trim();
+        String username = ConsoleUtils.promptString(scanner, "Введите username: ", true);
+        String roleName = ConsoleUtils.promptString(scanner, "Введите название роли: ", true);
+        String type = ConsoleUtils.promptString(scanner, "Введите тип (PERMANENT/TEMPORARY): ", true).toUpperCase();
+        String reason = ConsoleUtils.promptString(scanner, "Введите причину назначения: ", true);
         
         Optional<User> userOpt = system.getUserManager().findByUsername(username);
         Optional<Role> roleOpt = system.getRoleManager().findByName(roleName);
@@ -274,9 +292,12 @@ public class Commands {
         RoleAssignment assignment;
         
         if ("TEMPORARY".equals(type)) {
-            System.out.print("Введите дату истечения (YYYY-MM-DD): ");
-            String dateStr = scanner.nextLine().trim();
+            String dateStr = ConsoleUtils.promptString(scanner, "Введите дату истечения (YYYY-MM-DD): ", true);
             try {
+                if (!ValidationUtils.isValidDate(dateStr)) {
+                    System.out.println("Неверный формат даты");
+                    return;
+                }
                 String expiresAt = LocalDate.parse(dateStr).atStartOfDay().toString();
                 TemporaryAssignment temp = new TemporaryAssignment(userOpt.get(), roleOpt.get(), metadata);
                 temp.extend(expiresAt);
@@ -292,21 +313,25 @@ public class Commands {
         try {
             system.getAssignmentManager().add(assignment);
             System.out.println("Назначение создано");
+            system.getAuditLog().log(
+                    "ASSIGNMENT_CREATE",
+                    system.getCurrentUser(),
+                    assignment.assignmentId(),
+                    assignment.summary()
+            );
         } catch (IllegalArgumentException e) {
             System.out.println("Ошибка: " + e.getMessage());
         }
     }
     
     public static void revokeAssignment(Scanner scanner, RBACSystem system) {
-        System.out.print("Введите assignment ID или username: ");
-        String input = scanner.nextLine().trim();
+        String input = ConsoleUtils.promptString(scanner, "Введите assignment ID или username: ", true);
         
         RoleAssignment assignment = null;
         if (input.startsWith("assignment_")) {
             assignment = system.getAssignmentManager().findById(input).orElse(null);
         } else {
-            System.out.print("Введите название роли: ");
-            String roleName = scanner.nextLine().trim();
+            String roleName = ConsoleUtils.promptString(scanner, "Введите название роли: ", true);
             Optional<User> userOpt = system.getUserManager().findByUsername(input);
             Optional<Role> roleOpt = system.getRoleManager().findByName(roleName);
             
@@ -323,6 +348,12 @@ public class Commands {
             try {
                 system.getAssignmentManager().revokeAssignment(assignment.assignmentId());
                 System.out.println("Назначение отозвано");
+                system.getAuditLog().log(
+                        "ASSIGNMENT_REVOKE",
+                        system.getCurrentUser(),
+                        assignment.assignmentId(),
+                        "Назначение отозвано"
+                );
             } catch (IllegalArgumentException e) {
                 System.out.println("Ошибка: " + e.getMessage());
             }
@@ -336,8 +367,8 @@ public class Commands {
         if (assignments.isEmpty()) {
             System.out.println("Назначений нет");
         } else {
-            System.out.println("Список назначений:");
-            assignments.forEach(a -> System.out.println("  " + a.summary()));
+            System.out.println(FormatUtils.formatHeader("Список назначений"));
+            assignments.forEach(a -> System.out.println(FormatUtils.formatBox(a.summary())));
         }
     }
     
@@ -346,8 +377,8 @@ public class Commands {
         if (assignments.isEmpty()) {
             System.out.println("Активных назначений нет");
         } else {
-            System.out.println("Активные назначения:");
-            assignments.forEach(a -> System.out.println("  " + a.summary()));
+            System.out.println(FormatUtils.formatHeader("Активные назначения"));
+            assignments.forEach(a -> System.out.println(FormatUtils.formatBox(a.summary())));
         }
     }
     
@@ -356,16 +387,14 @@ public class Commands {
         if (assignments.isEmpty()) {
             System.out.println("Истёкших назначений нет");
         } else {
-            System.out.println("Истёкшие назначения:");
-            assignments.forEach(a -> System.out.println("  " + a.summary()));
+            System.out.println(FormatUtils.formatHeader("Истёкшие назначения"));
+            assignments.forEach(a -> System.out.println(FormatUtils.formatBox(a.summary())));
         }
     }
     
     public static void extendAssignment(Scanner scanner, RBACSystem system) {
-        System.out.print("Введите assignment ID: ");
-        String assignmentId = scanner.nextLine().trim();
-        System.out.print("Введите новую дату истечения (YYYY-MM-DD): ");
-        String dateStr = scanner.nextLine().trim();
+        String assignmentId = ConsoleUtils.promptString(scanner, "Введите assignment ID: ", true);
+        String dateStr = ConsoleUtils.promptString(scanner, "Введите новую дату истечения (YYYY-MM-DD): ", true);
         
         try {
             String newDate = LocalDate.parse(dateStr).atStartOfDay().toString();
@@ -379,21 +408,19 @@ public class Commands {
     }
     
     public static void searchAssignments(Scanner scanner, RBACSystem system) {
-        System.out.println("Выберите фильтр:");
+        System.out.println(FormatUtils.formatHeader("Поиск назначений"));
         System.out.println("1. По пользователю");
         System.out.println("2. По роли");
         System.out.println("3. По типу (PERMANENT/TEMPORARY)");
         System.out.println("4. По статусу (активное/неактивное)");
         System.out.println("5. Назначённые после даты");
         System.out.println("6. Истекающие до даты");
-        System.out.print("Ваш выбор: ");
-        String choice = scanner.nextLine().trim();
+        String choice = ConsoleUtils.promptString(scanner, "Ваш выбор: ", true);
         
         AssignmentFilter filter = null;
         switch (choice) {
             case "1":
-                System.out.print("Введите username: ");
-                String username = scanner.nextLine().trim();
+                String username = ConsoleUtils.promptString(scanner, "Введите username: ", true);
                 Optional<User> userOpt = system.getUserManager().findByUsername(username);
                 if (userOpt.isPresent()) {
                     filter = AssignmentFilters.byUser(userOpt.get());
@@ -403,8 +430,7 @@ public class Commands {
                 }
                 break;
             case "2":
-                System.out.print("Введите название роли: ");
-                String roleName = scanner.nextLine().trim();
+                String roleName = ConsoleUtils.promptString(scanner, "Введите название роли: ", true);
                 Optional<Role> roleOpt = system.getRoleManager().findByName(roleName);
                 if (roleOpt.isPresent()) {
                     filter = AssignmentFilters.byRole(roleOpt.get());
@@ -414,22 +440,19 @@ public class Commands {
                 }
                 break;
             case "3":
-                System.out.print("Введите тип (PERMANENT/TEMPORARY): ");
-                filter = AssignmentFilters.byType(scanner.nextLine().trim().toUpperCase());
+                filter = AssignmentFilters.byType(
+                        ConsoleUtils.promptString(scanner, "Введите тип (PERMANENT/TEMPORARY): ", true).toUpperCase());
                 break;
             case "4":
-                System.out.print("Активные? (y/n): ");
-                boolean active = scanner.nextLine().trim().toLowerCase().startsWith("y");
+                boolean active = ConsoleUtils.promptYesNo(scanner, "Активные? (y/n): ");
                 filter = active ? AssignmentFilters.activeOnly() : AssignmentFilters.inactiveOnly();
                 break;
             case "5":
-                System.out.print("Введите дату (YYYY-MM-DDTHH:mm:ss): ");
-                String dateAfter = scanner.nextLine().trim();
+                String dateAfter = ConsoleUtils.promptString(scanner, "Введите дату (YYYY-MM-DDTHH:mm:ss): ", true);
                 filter = AssignmentFilters.assignedAfter(dateAfter);
                 break;
             case "6":
-                System.out.print("Введите дату (YYYY-MM-DDTHH:mm:ss): ");
-                String dateBefore = scanner.nextLine().trim();
+                String dateBefore = ConsoleUtils.promptString(scanner, "Введите дату (YYYY-MM-DDTHH:mm:ss): ", true);
                 filter = AssignmentFilters.expiringBefore(dateBefore);
                 break;
             default:
@@ -442,15 +465,14 @@ public class Commands {
             System.out.println("Назначения не найдены");
         } else {
             System.out.println("Найдено назначений: " + results.size());
-            results.forEach(a -> System.out.println("  " + a.summary()));
+            results.forEach(a -> System.out.println(FormatUtils.formatBox(a.summary())));
         }
     }
     
     // ========== Команды просмотра прав ==========
     
     public static void showUserPermissions(Scanner scanner, RBACSystem system) {
-        System.out.print("Введите username: ");
-        String username = scanner.nextLine().trim();
+        String username = ConsoleUtils.promptString(scanner, "Введите username: ", true);
         
         Optional<User> userOpt = system.getUserManager().findByUsername(username);
         if (userOpt.isEmpty()) {
@@ -474,12 +496,9 @@ public class Commands {
     }
     
     public static void checkPermission(Scanner scanner, RBACSystem system) {
-        System.out.print("Введите username: ");
-        String username = scanner.nextLine().trim();
-        System.out.print("Введите название права: ");
-        String permName = scanner.nextLine().trim();
-        System.out.print("Введите ресурс: ");
-        String resource = scanner.nextLine().trim();
+        String username = ConsoleUtils.promptString(scanner, "Введите username: ", true);
+        String permName = ConsoleUtils.promptString(scanner, "Введите название права: ", true);
+        String resource = ConsoleUtils.promptString(scanner, "Введите ресурс: ", true);
         
         Optional<User> userOpt = system.getUserManager().findByUsername(username);
         if (userOpt.isEmpty()) {
@@ -520,9 +539,7 @@ public class Commands {
     }
     
     public static void exit(Scanner scanner, RBACSystem system) {
-        System.out.print("Сохранить данные перед выходом? (y/n): ");
-        String save = scanner.nextLine().trim().toLowerCase();
-        if (save.startsWith("y")) {
+        if (ConsoleUtils.promptYesNo(scanner, "Сохранить данные перед выходом? (y/n): ")) {
             save(scanner, system);
         }
         System.out.println("Выход из программы");
@@ -530,8 +547,7 @@ public class Commands {
     }
     
     public static void save(Scanner scanner, RBACSystem system) {
-        System.out.print("Введите имя файла (по умолчанию data.txt): ");
-        String filename = scanner.nextLine().trim();
+        String filename = ConsoleUtils.promptString(scanner, "Введите имя файла (по умолчанию data.txt): ", false);
         if (filename.isEmpty()) {
             filename = "data.txt";
         }
@@ -542,12 +558,35 @@ public class Commands {
     }
     
     public static void load(Scanner scanner, RBACSystem system) {
-        System.out.print("Введите имя файла: ");
-        String filename = scanner.nextLine().trim();
+        String filename = ConsoleUtils.promptString(scanner, "Введите имя файла: ", true);
         
         // Простая реализация загрузки (можно улучшить)
         System.out.println("Загрузка данных из " + filename + "...");
         System.out.println("(Функция загрузки требует дополнительной реализации)");
+    }
+
+    // ========== Отчёты и аудит ==========
+
+    public static void showAuditLog(Scanner scanner, RBACSystem system) {
+        system.getAuditLog().printLog();
+    }
+
+    public static void reportUsers(Scanner scanner, RBACSystem system) {
+        String report = ReportGenerator.generateUserReport(system.getUserManager(), system.getAssignmentManager());
+        System.out.println(FormatUtils.formatHeader("Отчёт по пользователям"));
+        System.out.println(report);
+    }
+
+    public static void reportRoles(Scanner scanner, RBACSystem system) {
+        String report = ReportGenerator.generateRoleReport(system.getRoleManager(), system.getAssignmentManager());
+        System.out.println(FormatUtils.formatHeader("Отчёт по ролям"));
+        System.out.println(report);
+    }
+
+    public static void reportMatrix(Scanner scanner, RBACSystem system) {
+        String report = ReportGenerator.generatePermissionMatrix(system.getUserManager(), system.getAssignmentManager());
+        System.out.println(FormatUtils.formatHeader("Матрица прав"));
+        System.out.println(report);
     }
 }
 
