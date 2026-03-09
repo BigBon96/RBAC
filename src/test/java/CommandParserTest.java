@@ -26,9 +26,7 @@ class CommandParserTest {
 
     @Test
     void testPrintHelp() {
-        // Просто проверяем, что метод не выбрасывает исключение
-        assertDoesNotThrow(() -> CommandParser.printHelp());
+        assertDoesNotThrow(CommandParser::printHelp);
     }
 }
-
 

@@ -44,6 +44,10 @@ class RBACSystemTest {
         assertTrue(stats.contains("Ролей"));
         assertTrue(stats.contains("Назначений"));
     }
-}
 
+    @Test
+    void auditLogIsAvailable() {
+        assertNotNull(system.getAuditLog());
+    }
+}
 

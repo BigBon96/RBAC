@@ -88,9 +88,8 @@ public class TemporaryAssignment extends AbstractRoleAssignment{
 
     @Override
     public String summary() {
-        String summary = super.summary();
-
-        return summary + String.format("\nExpires at: %s", this.expiresAt);
+        String summary = RoleAssignment.super.summary();
+        return summary + String.format("%nExpires at: %s", this.expiresAt);
     }
 }
 
