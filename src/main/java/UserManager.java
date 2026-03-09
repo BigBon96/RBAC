@@ -77,13 +77,12 @@ public class UserManager implements Repository<User> {
         }
 
         // Валидация новых данных
-        if (newFullName == null || newFullName.isEmpty()) {
-            throw new IllegalArgumentException("Full name cannot be null or empty");
+        if (newFullName == null || newEmail == null) {
+            throw new IllegalArgumentException("Full name and email cannot be null");
         }
-        if (newEmail == null || newEmail.isEmpty()) {
-            throw new IllegalArgumentException("Email cannot be null or empty");
-        }
-        if (!newEmail.matches("^[\\w.%+-]+@[\\w.-]+\\.[a-z]{2,}$")) {
+        ValidationUtils.requireNonEmpty(newFullName, "fullName");
+        ValidationUtils.requireNonEmpty(newEmail, "email");
+        if (!ValidationUtils.isValidEmail(newEmail)) {
             throw new IllegalArgumentException("Некорректный формат email!");
         }
 
@@ -96,7 +95,11 @@ public class UserManager implements Repository<User> {
         }
 
         // Создаем нового пользователя с обновленными данными
-        User updatedUser = new User(username, newFullName, newEmail);
+        User updatedUser = new User(
+                username,
+                ValidationUtils.normalizeString(newFullName),
+                ValidationUtils.normalizeString(newEmail)
+        );
         users.put(username, updatedUser);
     }
 }
