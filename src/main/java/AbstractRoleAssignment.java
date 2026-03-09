@@ -50,22 +50,5 @@ public abstract class AbstractRoleAssignment implements RoleAssignment {
     public int hashCode() {
         return assignmentId.hashCode();
     }
-
-    public String summary() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("[").append(this.assignmentType()).append("] ")
-                .append(this.role.getName()).append(" assigned to ")
-                .append(this.user.username()).append(" by ")
-                .append(this.assignmentMetadata.assignedBy())
-                .append(" at ").append(this.assignmentMetadata.assignedAt())
-                .append("\n");
-
-        sb.append("Reason ").append(this.assignmentMetadata.reason())
-                .append("\n");
-
-        sb.append("Status: ").append(this.isActive() ? "ACTIVE" : "INACTIVE");
-
-        return sb.toString();
-    }
 }
 
