@@ -88,8 +88,17 @@ public class TemporaryAssignment extends AbstractRoleAssignment{
 
     @Override
     public String summary() {
-        String summary = RoleAssignment.super.summary();
-        return summary + String.format("%nExpires at: %s", this.expiresAt);
+        StringBuilder sb = new StringBuilder();
+        sb.append("[").append(assignmentType()).append("] ")
+                .append(role().getName()).append(" assigned to ")
+                .append(user().username()).append(" by ")
+                .append(metadata().assignedBy()).append(" at ").append(metadata().assignedAt())
+                .append("\nReason ").append(metadata().reason())
+                .append("\nStatus: ").append(isActive() ? "ACTIVE" : "INACTIVE");
+        if (expiresAt != null && !expiresAt.isEmpty()) {
+            sb.append(String.format("%nExpires at: %s", expiresAt));
+        }
+        return sb.toString();
     }
 }
 
