@@ -38,7 +38,8 @@ class CommandsTest {
         scanner = createScanner("");
         Commands.listUsers(scanner, system);
         String output = outputStream.toString();
-        assertTrue(output.contains("Пользователей") || output.contains("admin"));
+        assertTrue(output.contains("Список пользователей"));
+        assertTrue(output.contains("admin"));
     }
 
     @Test
@@ -53,7 +54,8 @@ class CommandsTest {
         scanner = createScanner("");
         Commands.listRoles(scanner, system);
         String output = outputStream.toString();
-        assertTrue(output.contains("Ролей") || output.contains("Administrator"));
+        assertTrue(output.contains("Список ролей"));
+        assertTrue(output.contains("Administrator"));
     }
 
     @Test
@@ -61,7 +63,8 @@ class CommandsTest {
         scanner = createScanner("");
         Commands.showStats(scanner, system);
         String output = outputStream.toString();
-        assertTrue(output.contains("Статистика") || output.contains("Пользователей"));
+        assertTrue(output.contains("Пользователей"));
+        assertTrue(output.contains("Ролей"));
     }
 
     @Test
@@ -69,8 +72,28 @@ class CommandsTest {
         scanner = createScanner("");
         Commands.showHelp(scanner, system);
         String output = outputStream.toString();
-        assertTrue(output.contains("Справка") || output.contains("команды"));
+        assertTrue(output.contains("Справка по командам"));
+    }
+
+    @Test
+    void testAuditLogCommand() {
+        scanner = createScanner("testuser\nTest User\ntest@mail.com\n");
+        Commands.createUser(scanner, system);
+
+        scanner = createScanner("");
+        Commands.showAuditLog(scanner, system);
+        String output = outputStream.toString();
+        assertTrue(output.contains("Аудит-лог"));
+        assertTrue(output.contains("USER_CREATE"));
+    }
+
+    @Test
+    void testReportUsersCommand() {
+        scanner = createScanner("");
+        Commands.reportUsers(scanner, system);
+        String output = outputStream.toString();
+        assertTrue(output.contains("Отчёт по пользователям"));
+        assertTrue(output.contains("admin"));
     }
 }
-
 
