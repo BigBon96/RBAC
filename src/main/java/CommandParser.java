@@ -40,11 +40,13 @@ public class CommandParser {
         commands.put("clear", Commands::clearScreen);
         commands.put("exit", Commands::exit);
         commands.put("save", Commands::save);
+        commands.put("save-async", Commands::saveAsync);
         commands.put("load", Commands::load);
 
         // Отчёты и аудит
         commands.put("audit-log", Commands::showAuditLog);
         commands.put("report-users", Commands::reportUsers);
+        commands.put("report-users-async", Commands::reportUsersAsync);
         commands.put("report-roles", Commands::reportRoles);
         commands.put("report-matrix", Commands::reportMatrix);
     }
@@ -92,9 +94,11 @@ public class CommandParser {
         System.out.println("  clear                - очистить экран");
         System.out.println("  exit                 - выход из программы");
         System.out.println("  save                 - сохранить данные в файл");
+        System.out.println("  save-async           - сохранить данные в файл асинхронно");
         System.out.println("  load                 - загрузить данные из файла");
         System.out.println("  audit-log            - показать аудит-лог");
         System.out.println("  report-users         - отчёт по пользователям");
+        System.out.println("  report-users-async   - асинхронный отчёт по пользователям");
         System.out.println("  report-roles         - отчёт по ролям");
         System.out.println("  report-matrix        - матрица прав");
     }

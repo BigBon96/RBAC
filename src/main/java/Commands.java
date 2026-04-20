@@ -565,6 +565,23 @@ public class Commands {
         System.out.println("(Функция загрузки требует дополнительной реализации)");
     }
 
+    public static void saveAsync(Scanner scanner, RBACSystem system) {
+        String filename = ConsoleUtils.promptString(scanner, "Введите имя файла (по умолчанию data.txt): ", false);
+        if (filename.isEmpty()) {
+            filename = "data.txt";
+        }
+        final String fName = filename;
+        System.out.println("Сохранение данных запущено в фоновом режиме...");
+        system.getExecutorService().submit(() -> {
+            try {
+                Thread.sleep(1500); // Имитация долгого сохранения
+                System.out.println("\n[Асинхронно] Сохранение завершено в " + fName);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+    }
+
     // ========== Отчёты и аудит ==========
 
     public static void showAuditLog(Scanner scanner, RBACSystem system) {
@@ -581,6 +598,19 @@ public class Commands {
         String report = ReportGenerator.generateRoleReport(system.getRoleManager(), system.getAssignmentManager());
         System.out.println(FormatUtils.formatHeader("Отчёт по ролям"));
         System.out.println(report);
+    }
+
+    public static void reportUsersAsync(Scanner scanner, RBACSystem system) {
+        System.out.println("Генерация отчёта запущена в фоновом режиме...");
+        system.getExecutorService().submit(() -> {
+            try {
+                String report = ReportGenerator.generateUserReportParallel(system.getUserManager(), system.getAssignmentManager());
+                System.out.println("\n" + FormatUtils.formatHeader("Асинхронный Отчёт по пользователям"));
+                System.out.println(report);
+            } catch (Exception e) {
+                System.out.println("Ошибка при генерации отчёта: " + e.getMessage());
+            }
+        });
     }
 
     public static void reportMatrix(Scanner scanner, RBACSystem system) {

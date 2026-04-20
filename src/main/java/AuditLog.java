@@ -2,9 +2,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
 public class AuditLog {
@@ -18,11 +20,28 @@ public class AuditLog {
     ) {
     }
 
-    private final List<AuditEntry> entries = new ArrayList<>();
+    private final List<AuditEntry> entries = new CopyOnWriteArrayList<>();
+    private final BlockingQueue<AuditEntry> queue = new LinkedBlockingQueue<>();
+    private final Thread handlerThread;
+
+    public AuditLog() {
+        handlerThread = new Thread(() -> {
+            try {
+                while (!Thread.currentThread().isInterrupted()) {
+                    AuditEntry entry = queue.take();
+                    entries.add(entry);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+        handlerThread.setDaemon(true);
+        handlerThread.start();
+    }
 
     public void log(String action, String performer, String target, String details) {
         String ts = LocalDateTime.now().toString();
-        entries.add(new AuditEntry(ts, action, performer, target, details));
+        queue.offer(new AuditEntry(ts, action, performer, target, details));
     }
 
     public List<AuditEntry> getAll() {

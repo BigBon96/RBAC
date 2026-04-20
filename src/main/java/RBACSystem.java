@@ -1,5 +1,7 @@
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class RBACSystem {
@@ -7,6 +9,7 @@ public class RBACSystem {
     private final RoleManager roleManager;
     private final AssignmentManager assignmentManager;
     private final AuditLog auditLog;
+    private final ExecutorService executorService;
     private String currentUser;
 
     public RBACSystem() {
@@ -14,6 +17,7 @@ public class RBACSystem {
         this.roleManager = new RoleManager();
         this.assignmentManager = new AssignmentManager(userManager, roleManager);
         this.auditLog = new AuditLog();
+        this.executorService = Executors.newFixedThreadPool(4);
         this.currentUser = "system";
     }
 
@@ -31,6 +35,10 @@ public class RBACSystem {
 
     public AuditLog getAuditLog() {
         return auditLog;
+    }
+
+    public ExecutorService getExecutorService() {
+        return executorService;
     }
 
     public void setCurrentUser(String username) {
