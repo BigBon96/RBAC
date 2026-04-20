@@ -1,12 +1,13 @@
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Role {
     private final String id;
     private final String name;
     private final String description;
-    private Set<Permission> permissions = new HashSet<Permission>();
+    private Set<Permission> permissions = ConcurrentHashMap.newKeySet();
 
     public Role(String name, String description) {
         this.id = "role_" + UUID.randomUUID().toString();

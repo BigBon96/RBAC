@@ -1,12 +1,13 @@
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class RoleManager implements Repository<Role> {
-    private final Map<String, Role> rolesById = new HashMap<>();
-    private final Map<String, Role> rolesByName = new HashMap<>();
+    private final Map<String, Role> rolesById = new ConcurrentHashMap<>();
+    private final Map<String, Role> rolesByName = new ConcurrentHashMap<>();
 
     @Override
-    public void add(Role item) {
+    public synchronized void add(Role item) {
         if (item == null) {
             throw new IllegalArgumentException("Role cannot be null");
         }
@@ -21,7 +22,7 @@ public class RoleManager implements Repository<Role> {
     }
 
     @Override
-    public boolean remove(Role item) {
+    public synchronized boolean remove(Role item) {
         if (item == null) {
             return false;
         }
@@ -51,7 +52,7 @@ public class RoleManager implements Repository<Role> {
     }
 
     @Override
-    public void clear() {
+    public synchronized void clear() {
         rolesById.clear();
         rolesByName.clear();
     }
@@ -77,7 +78,7 @@ public class RoleManager implements Repository<Role> {
         return rolesByName.containsKey(name);
     }
 
-    public void addPermissionToRole(String roleName, Permission permission) {
+    public synchronized void addPermissionToRole(String roleName, Permission permission) {
         Role role = rolesByName.get(roleName);
         if (role == null) {
             throw new IllegalArgumentException("Role with name '" + roleName + "' not found");
@@ -88,7 +89,7 @@ public class RoleManager implements Repository<Role> {
         role.addPermission(permission);
     }
 
-    public void removePermissionFromRole(String roleName, Permission permission) {
+    public synchronized void removePermissionFromRole(String roleName, Permission permission) {
         Role role = rolesByName.get(roleName);
         if (role == null) {
             throw new IllegalArgumentException("Role with name '" + roleName + "' not found");

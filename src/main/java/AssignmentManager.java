@@ -1,8 +1,9 @@
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class AssignmentManager implements Repository<RoleAssignment> {
-    private final Map<String, RoleAssignment> assignments = new HashMap<>();
+    private final Map<String, RoleAssignment> assignments = new ConcurrentHashMap<>();
     private final UserManager userManager;
     private final RoleManager roleManager;
 
@@ -12,7 +13,7 @@ public class AssignmentManager implements Repository<RoleAssignment> {
     }
 
     @Override
-    public void add(RoleAssignment item) {
+    public synchronized void add(RoleAssignment item) {
         if (item == null) {
             throw new IllegalArgumentException("Assignment cannot be null");
         }
@@ -38,7 +39,7 @@ public class AssignmentManager implements Repository<RoleAssignment> {
     }
 
     @Override
-    public boolean remove(RoleAssignment item) {
+    public synchronized boolean remove(RoleAssignment item) {
         if (item == null) {
             return false;
         }
@@ -61,7 +62,7 @@ public class AssignmentManager implements Repository<RoleAssignment> {
     }
 
     @Override
-    public void clear() {
+    public synchronized void clear() {
         assignments.clear();
     }
 
@@ -121,7 +122,7 @@ public class AssignmentManager implements Repository<RoleAssignment> {
                 .collect(Collectors.toSet());
     }
 
-    public void revokeAssignment(String assignmentId) {
+    public synchronized void revokeAssignment(String assignmentId) {
         RoleAssignment assignment = assignments.get(assignmentId);
         if (assignment == null) {
             throw new IllegalArgumentException("Assignment with id '" + assignmentId + "' not found");
@@ -135,7 +136,7 @@ public class AssignmentManager implements Repository<RoleAssignment> {
         }
     }
 
-    public void extendTemporaryAssignment(String assignmentId, String newExpirationDate) {
+    public synchronized void extendTemporaryAssignment(String assignmentId, String newExpirationDate) {
         RoleAssignment assignment = assignments.get(assignmentId);
         if (assignment == null) {
             throw new IllegalArgumentException("Assignment with id '" + assignmentId + "' not found");

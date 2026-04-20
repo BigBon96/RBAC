@@ -1,11 +1,12 @@
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class UserManager implements Repository<User> {
-    private final Map<String, User> users = new HashMap<>();
+    private final Map<String, User> users = new ConcurrentHashMap<>();
 
     @Override
-    public void add(User item) {
+    public synchronized void add(User item) {
         if (item == null) {
             throw new IllegalArgumentException("User cannot be null");
         }
@@ -16,7 +17,7 @@ public class UserManager implements Repository<User> {
     }
 
     @Override
-    public boolean remove(User item) {
+    public synchronized boolean remove(User item) {
         if (item == null) {
             return false;
         }
@@ -39,7 +40,7 @@ public class UserManager implements Repository<User> {
     }
 
     @Override
-    public void clear() {
+    public synchronized void clear() {
         users.clear();
     }
 
@@ -70,7 +71,7 @@ public class UserManager implements Repository<User> {
         return users.containsKey(username);
     }
 
-    public void update(String username, String newFullName, String newEmail) {
+    public synchronized void update(String username, String newFullName, String newEmail) {
         User existingUser = users.get(username);
         if (existingUser == null) {
             throw new IllegalArgumentException("User with username '" + username + "' not found");
