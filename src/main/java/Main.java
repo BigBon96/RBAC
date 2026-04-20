@@ -8,8 +8,19 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
         
         System.out.println("=== RBAC System ===");
+        System.out.println("Система инициализирована. Запущено фоновое логирование и периодические задачи.");
+        System.out.println("Текущая статистика:");
+        System.out.println(system.generateStatistics());
+        
         System.out.println("Введите 'help' для справки по командам");
         System.out.println("Введите 'exit' для выхода\n");
+        
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("\nОстановка системы. Завершение фоновых задач...");
+            system.getScheduledExecutorService().shutdownNow();
+            system.getExecutorService().shutdownNow();
+            System.out.println("Система успешно остановлена.");
+        }));
         
         while (true) {
             System.out.print("> ");

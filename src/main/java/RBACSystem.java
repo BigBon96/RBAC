@@ -2,6 +2,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class RBACSystem {
@@ -10,6 +12,7 @@ public class RBACSystem {
     private final AssignmentManager assignmentManager;
     private final AuditLog auditLog;
     private final ExecutorService executorService;
+    private final ScheduledExecutorService scheduledExecutorService;
     private String currentUser;
 
     public RBACSystem() {
@@ -18,6 +21,7 @@ public class RBACSystem {
         this.assignmentManager = new AssignmentManager(userManager, roleManager);
         this.auditLog = new AuditLog();
         this.executorService = Executors.newFixedThreadPool(4);
+        this.scheduledExecutorService = Executors.newScheduledThreadPool(1);
         this.currentUser = "system";
     }
 
@@ -39,6 +43,10 @@ public class RBACSystem {
 
     public ExecutorService getExecutorService() {
         return executorService;
+    }
+
+    public ScheduledExecutorService getScheduledExecutorService() {
+        return scheduledExecutorService;
     }
 
     public void setCurrentUser(String username) {
@@ -87,6 +95,26 @@ public class RBACSystem {
         assignmentManager.add(adminAssignment);
 
         this.currentUser = "admin";
+
+        // Запуск периодической задачи
+        scheduledExecutorService.scheduleAtFixedRate(() -> {
+            try {
+                // Находим истёкшие назначения (минимальная блокировка, так как ConcurrentHashMap)
+                List<RoleAssignment> expired = assignmentManager.getExpiredAssignments();
+                if (!expired.isEmpty()) {
+                    for (RoleAssignment a : expired) {
+                        assignmentManager.revokeAssignment(a.assignmentId());
+                        auditLog.log("ASSIGNMENT_EXPIRED", "system", a.assignmentId(), "Временное назначение истекло и было отозвано");
+                    }
+                }
+                
+                // Пишем статистику в лог
+                String stats = generateStatistics();
+                auditLog.log("SYSTEM_STATS", "system", "statistics", stats);
+            } catch (Exception e) {
+                System.err.println("Ошибка в фоновой задаче: " + e.getMessage());
+            }
+        }, 10, 10, TimeUnit.SECONDS);
     }
 
     public String generateStatistics() {
