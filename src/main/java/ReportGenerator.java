@@ -37,6 +37,31 @@ public final class ReportGenerator {
         return FormatUtils.formatTable(headers, rows);
     }
 
+    public static String generateUserReportParallel(UserManager userManager, AssignmentManager assignmentManager) {
+        List<User> users = userManager.findAll();
+
+        List<String[]> rows = users.parallelStream()
+                .sorted(Comparator.comparing(User::username))
+                .map(user -> {
+                    List<RoleAssignment> assignments = assignmentManager.findByUser(user);
+                    String roles = assignments.stream()
+                            .map(a -> a.role().getName())
+                            .distinct()
+                            .sorted()
+                            .collect(Collectors.joining(", "));
+                    return new String[]{
+                            user.username(),
+                            user.fullName(),
+                            user.email(),
+                            roles.isEmpty() ? "-" : roles
+                    };
+                })
+                .collect(Collectors.toList());
+
+        String[] headers = {"Username", "Full Name", "Email", "Roles"};
+        return FormatUtils.formatTable(headers, rows);
+    }
+
     public static String generateRoleReport(RoleManager roleManager, AssignmentManager assignmentManager) {
         List<Role> roles = new ArrayList<>(roleManager.findAll());
         roles.sort(Comparator.comparing(Role::getName));
@@ -87,6 +112,39 @@ public final class ReportGenerator {
             }
             rows.add(row);
         }
+
+        return FormatUtils.formatTable(headers, rows);
+    }
+
+    public static String generatePermissionMatrixParallel(UserManager userManager, AssignmentManager assignmentManager) {
+        List<User> users = userManager.findAll();
+
+        List<String> sortedResources = users.parallelStream()
+                .flatMap(user -> assignmentManager.getUserPermissions(user).stream())
+                .map(Permission::resource)
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+
+        List<String> headersList = new ArrayList<>();
+        headersList.add("Username");
+        headersList.addAll(sortedResources);
+        String[] headers = headersList.toArray(new String[0]);
+
+        List<String[]> rows = users.parallelStream()
+                .sorted(Comparator.comparing(User::username))
+                .map(user -> {
+                    Set<Permission> perms = assignmentManager.getUserPermissions(user);
+                    String[] row = new String[headers.length];
+                    row[0] = user.username();
+                    int idx = 1;
+                    for (String resource : sortedResources) {
+                        boolean hasAny = perms.stream().anyMatch(p -> p.resource().equals(resource));
+                        row[idx++] = hasAny ? "X" : "";
+                    }
+                    return row;
+                })
+                .collect(Collectors.toList());
 
         return FormatUtils.formatTable(headers, rows);
     }

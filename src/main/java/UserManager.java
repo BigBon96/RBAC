@@ -67,6 +67,19 @@ public class UserManager implements Repository<User> {
                 .collect(Collectors.toList());
     }
 
+    public List<User> findByFilterParallel(UserFilter filter) {
+        return users.values().parallelStream()
+                .filter(filter::test)
+                .collect(Collectors.toList());
+    }
+
+    public List<User> findAllParallel(UserFilter filter, Comparator<User> sorter) {
+        return users.values().parallelStream()
+                .filter(filter::test)
+                .sorted(sorter)
+                .collect(Collectors.toList());
+    }
+
     public boolean exists(String username) {
         return users.containsKey(username);
     }
